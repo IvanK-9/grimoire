@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import NightFlashcards, { FullscreenFlashcard } from './components/NightFlashcards';
 
 const ROLES_DB = {
@@ -54,13 +54,37 @@ const getRoleInfo = (id) => {
   };
 };
 
+function useLocalStorage(key, defaultValue) {
+  const [value, setValue] = useState(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored !== null) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn(`Failed to read ${key} from localStorage`, e);
+    }
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn(`Failed to write ${key} to localStorage`, e);
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState('bag');
-  const [scriptName, setScriptName] = useState('Trouble Brewing');
-  const [scriptRoles, setScriptRoles] = useState(Object.keys(ROLES_DB));
-  const [bagRoles, setBagRoles] = useState([]);
-  const [drunkDisguise, setDrunkDisguise] = useState('');
-  const [seats, setSeats] = useState([]);
+  const [activeTab, setActiveTab] = useLocalStorage('botc_active_tab', 'bag');
+  const [scriptName, setScriptName] = useLocalStorage('botc_script_name', 'Trouble Brewing');
+  const [scriptRoles, setScriptRoles] = useLocalStorage('botc_script_roles', Object.keys(ROLES_DB));
+  const [bagRoles, setBagRoles] = useLocalStorage('botc_bag_roles', []);
+  const [drunkDisguise, setDrunkDisguise] = useLocalStorage('botc_drunk_disguise', '');
+  const [seats, setSeats] = useLocalStorage('botc_seats', []);
   const [selectedSeatIndex, setSelectedSeatIndex] = useState(null);
   const [fullscreenCard, setFullscreenCard] = useState(null);
 
@@ -150,6 +174,15 @@ export default function App() {
     return g;
   }, [scriptRoles]);
 
+  const handleResetGame = () => {
+    if (window.confirm('Reset current game? This will clear all seats and selected bag roles.')) {
+      setBagRoles([]);
+      setDrunkDisguise('');
+      setSeats([]);
+      setActiveTab('bag');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-36 font-sans select-none">
       <FullscreenFlashcard card={fullscreenCard} onClose={() => setFullscreenCard(null)} />
@@ -159,7 +192,15 @@ export default function App() {
           <h1 className="text-base font-bold text-amber-400">BotC Pocket Grimoire</h1>
           <p className="text-xs text-zinc-400">Script: <b className="text-zinc-200">{scriptName}</b></p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={handleResetGame}
+            title="Reset current game and start fresh"
+            className="text-xs text-zinc-400 hover:text-rose-400 border border-zinc-700 hover:border-rose-900/60 bg-zinc-800 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+          >
+            <span>↺</span>
+            <span className="hidden sm:inline">Reset</span>
+          </button>
           <button
             onClick={() => setActiveTab('night')}
             className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${
@@ -171,7 +212,7 @@ export default function App() {
             <span>🌙</span>
             <span className="hidden sm:inline">Big Text</span>
           </button>
-          <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-xs font-medium px-3 py-1.5 rounded-lg border border-zinc-700">
+          <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-zinc-700">
             Load JSON
             <input type="file" accept=".json,application/json" onChange={handleFileUpload} className="hidden" />
           </label>
@@ -318,7 +359,7 @@ export default function App() {
                           })
                         }
                         title="Show role to player in Big Text"
-                        className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2 py-1.5 rounded-lg text-xs text-zinc-300 hover:text-white"
+                        className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 px-2 py-1.5 rounded-lg text-xs text-zinc-300 hover:text-white"
                       >
                         👁️ Show
                       </button>
