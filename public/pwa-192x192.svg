@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1c1624"/>
+      <stop offset="100%" stop-color="#08070b"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <linearGradient id="crimson" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#881337"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle with gold rim -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg)" stroke="url(#gold)" stroke-width="12"/>
+  <circle cx="256" cy="256" r="216" fill="none" stroke="#2e2538" stroke-width="4" stroke-dasharray="8 6"/>
+
+  <!-- Four cardinal diamonds -->
+  <polygon points="256,40 266,54 256,68 246,54" fill="url(#gold)"/>
+  <polygon points="256,444 266,458 256,472 246,458" fill="url(#gold)"/>
+  <polygon points="40,256 54,246 68,256 54,266" fill="url(#gold)"/>
+  <polygon points="444,256 458,246 472,256 458,266" fill="url(#gold)"/>
+
+  <!-- Grimoire Spellbook silhouette -->
+  <path d="M140,160 C140,150 150,140 162,140 L350,140 C362,140 372,150 372,160 L372,350 C372,362 362,372 350,372 L162,372 C150,372 140,362 140,350 Z" fill="#131019" stroke="url(#gold)" stroke-width="8"/>
+  <line x1="256" y1="140" x2="256" y2="372" stroke="url(#gold)" stroke-width="6"/>
+
+  <!-- Mystic Eye / Demon symbol in center -->
+  <ellipse cx="256" cy="256" rx="60" ry="34" fill="none" stroke="url(#crimson)" stroke-width="6"/>
+  <circle cx="256" cy="256" r="18" fill="url(#crimson)"/>
+  <circle cx="252" cy="252" r="5" fill="#ffffff"/>
+
+  <!-- Corner flourishes on book -->
+  <polygon points="152,152 170,152 152,170" fill="url(#gold)"/>
+  <polygon points="360,152 342,152 360,170" fill="url(#gold)"/>
+  <polygon points="152,360 170,360 152,342" fill="url(#gold)"/>
+  <polygon points="360,360 342,360 360,342" fill="url(#gold)"/>
+</svg>
