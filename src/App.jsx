@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import NightFlashcards, { FullscreenFlashcard } from './components/NightFlashcards';
 import GrimoireCircle from './components/GrimoireCircle';
 import RoleBalanceTracker from './components/RoleBalanceTracker';
+import { TRAVELLERS_DB } from './data/travellers';
 
 const ROLES_DB = {
   washerwoman: ['Washerwoman', 'townsfolk', '🧺', 'You start knowing that 1 of 2 players is a specific Townsfolk.'],
@@ -33,10 +34,12 @@ const TEAM_STYLES = {
   outsider: { label: 'Outsiders', border: 'border-cyan-500', bg: 'bg-cyan-950/60', text: 'text-cyan-300', badge: 'bg-cyan-600' },
   minion: { label: 'Minions', border: 'border-orange-500', bg: 'bg-orange-950/60', text: 'text-orange-300', badge: 'bg-orange-600' },
   demon: { label: 'Demons', border: 'border-red-500', bg: 'bg-red-950/60', text: 'text-red-300', badge: 'bg-red-600' },
+  traveller: { label: 'Travellers', border: 'border-purple-500', bg: 'bg-purple-950/60', text: 'text-purple-300', badge: 'bg-purple-600' },
   unknown: { label: 'Custom / Other', border: 'border-zinc-500', bg: 'bg-zinc-900', text: 'text-zinc-300', badge: 'bg-zinc-600' },
 };
 
 const getRoleInfo = (id) => {
+  if (!id) return null;
   const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (ROLES_DB[cleanId]) {
     return {
@@ -45,6 +48,15 @@ const getRoleInfo = (id) => {
       team: ROLES_DB[cleanId][1],
       icon: ROLES_DB[cleanId][2] || '✦',
       ability: ROLES_DB[cleanId][3] || '',
+    };
+  }
+  if (TRAVELLERS_DB[cleanId]) {
+    return {
+      id: cleanId,
+      name: TRAVELLERS_DB[cleanId].name,
+      team: 'traveller',
+      icon: TRAVELLERS_DB[cleanId].icon,
+      ability: TRAVELLERS_DB[cleanId].ability,
     };
   }
   return {
@@ -83,8 +95,8 @@ function useLocalStorage(key, defaultValue) {
 export default function App() {
   const [activeTab, setActiveTab] = useLocalStorage('botc_active_tab', 'bag');
   const [playerCount, setPlayerCount] = useLocalStorage('botc_player_count', 8);
-  const [scriptName, setScriptName] = useLocalStorage('botc_script_name', 'Trouble Brewing');
-  const [scriptRoles, setScriptRoles] = useLocalStorage('botc_script_roles', Object.keys(ROLES_DB));
+  const [scriptName] = useLocalStorage('botc_script_name', 'Trouble Brewing');
+  const [scriptRoles] = useLocalStorage('botc_script_roles', Object.keys(ROLES_DB));
   const [bagRoles, setBagRoles] = useLocalStorage('botc_bag_roles', []);
   const [drunkDisguise, setDrunkDisguise] = useLocalStorage('botc_drunk_disguise', '');
   const [seats, setSeats] = useLocalStorage('botc_seats', []);
@@ -98,40 +110,15 @@ export default function App() {
           seat: i + 1,
           name: '',
           drawnToken: null,
+          isDrunk: false,
+          isTraveller: false,
+          travellerAlignment: 'good',
+          reminders: [],
           isDead: false,
         }))
       );
     }
   }, [playerCount, seats.length, setSeats]);
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const json = JSON.parse(ev.target.result);
-        if (!Array.isArray(json)) throw new Error();
-        let name = file.name.replace('.json', '');
-        const roles = [];
-        json.forEach((item) => {
-          if (typeof item === 'string') roles.push(item);
-          else if (item?.id === '_meta' && item.name) name = item.name;
-          else if (item?.id) roles.push(item.id);
-        });
-        if (roles.length) {
-          setScriptName(name);
-          setScriptRoles(roles);
-          setBagRoles([]);
-          setDrunkDisguise('');
-        }
-      } catch {
-        alert('Invalid script JSON');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = ''; // Reset input to allow re-uploading same file
-  };
 
   const toggleRoleInBag = (roleId) => {
     setBagRoles((prev) => {
@@ -157,7 +144,71 @@ export default function App() {
   );
 
   const handleAssignToken = (idx, token) => {
-    setSeats((prev) => prev.map((s, i) => (i === idx ? { ...s, drawnToken: token } : s)));
+    setSeats((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const isDrunkDisguise = drunkDisguise && token === drunkDisguise;
+        return {
+          ...s,
+          drawnToken: token,
+          isDrunk: s.isDrunk || isDrunkDisguise,
+        };
+      })
+    );
+  };
+
+  const handleToggleDrunk = (idx) => {
+    setSeats((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const willBeDrunk = !s.isDrunk;
+        return {
+          ...s,
+          isDrunk: willBeDrunk,
+          drawnToken: s.drawnToken || (availableTownsfolkForDrunk[0]?.id || 'monk'),
+        };
+      })
+    );
+  };
+
+  const handleToggleTraveller = (idx) => {
+    setSeats((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const nextTrav = !s.isTraveller;
+        return {
+          ...s,
+          isTraveller: nextTrav,
+          drawnToken: nextTrav ? (s.drawnToken || 'gunslinger') : s.drawnToken,
+          travellerAlignment: s.travellerAlignment || 'good',
+        };
+      })
+    );
+  };
+
+  const handleSetTravellerRole = (idx, roleId) => {
+    setSeats((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, drawnToken: roleId, isTraveller: true } : s))
+    );
+  };
+
+  const handleSetTravellerAlignment = (idx, alignment) => {
+    setSeats((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, travellerAlignment: alignment } : s))
+    );
+  };
+
+  const handleToggleReminder = (idx, reminder) => {
+    setSeats((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const currentReminders = s.reminders || [];
+        const nextReminders = currentReminders.includes(reminder)
+          ? currentReminders.filter((r) => r !== reminder)
+          : [...currentReminders, reminder];
+        return { ...s, reminders: nextReminders };
+      })
+    );
   };
 
   const handleUpdateSeatName = (idx, name) => {
@@ -171,7 +222,32 @@ export default function App() {
   const handleAddSeat = () => {
     setSeats((prev) => [
       ...prev,
-      { seat: prev.length + 1, name: '', drawnToken: null, isDead: false },
+      {
+        seat: prev.length + 1,
+        name: '',
+        drawnToken: null,
+        isDrunk: false,
+        isTraveller: false,
+        travellerAlignment: 'good',
+        reminders: [],
+        isDead: false,
+      },
+    ]);
+  };
+
+  const handleAddTraveller = () => {
+    setSeats((prev) => [
+      ...prev,
+      {
+        seat: prev.length + 1,
+        name: '',
+        drawnToken: 'gunslinger',
+        isDrunk: false,
+        isTraveller: true,
+        travellerAlignment: 'good',
+        reminders: [],
+        isDead: false,
+      },
     ]);
   };
 
@@ -195,11 +271,20 @@ export default function App() {
       if (prev.length < num) {
         const next = [...prev];
         for (let i = prev.length; i < num; i++) {
-          next.push({ seat: i + 1, name: '', drawnToken: null, isDead: false });
+          next.push({
+            seat: i + 1,
+            name: '',
+            drawnToken: null,
+            isDrunk: false,
+            isTraveller: false,
+            travellerAlignment: 'good',
+            reminders: [],
+            isDead: false,
+          });
         }
         return next;
       }
-      const canSafelyShrink = prev.slice(num).every((s) => !s.drawnToken && !s.name);
+      const canSafelyShrink = prev.slice(num).every((s) => !s.drawnToken && !s.name && !s.isTraveller);
       if (canSafelyShrink) {
         return prev.slice(0, num);
       }
@@ -216,6 +301,10 @@ export default function App() {
           seat: i + 1,
           name: '',
           drawnToken: null,
+          isDrunk: false,
+          isTraveller: false,
+          travellerAlignment: 'good',
+          reminders: [],
           isDead: false,
         }))
       );
@@ -227,7 +316,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans select-none flex flex-col">
       <FullscreenFlashcard card={fullscreenCard} onClose={() => setFullscreenCard(null)} />
 
-      {/* Sticky Header */}
+      {/* Sticky Header (No Load JSON) */}
       <header className="sticky top-0 z-30 bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex items-center justify-between shadow-md">
         <div>
           <h1 className="text-base font-bold text-amber-400">BotC Pocket Grimoire</h1>
@@ -237,15 +326,11 @@ export default function App() {
           <button
             onClick={handleResetGame}
             title="Reset current game and start fresh"
-            className="text-xs text-zinc-400 hover:text-rose-400 border border-zinc-700 hover:border-rose-900/60 bg-zinc-800 px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+            className="text-xs text-zinc-400 hover:text-rose-400 border border-zinc-700 hover:border-rose-900/60 bg-zinc-800 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1"
           >
             <span>↺</span>
-            <span className="hidden sm:inline">Reset</span>
+            <span className="hidden sm:inline">Reset Game</span>
           </button>
-          <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-zinc-700">
-            Load JSON
-            <input type="file" accept=".json,application/json" onChange={handleFileUpload} className="hidden" />
-          </label>
         </div>
       </header>
 
@@ -397,12 +482,19 @@ export default function App() {
             seats={seats}
             drunkDisguise={drunkDisguise}
             physicalTokensInBag={physicalTokensInBag}
+            availableTownsfolk={availableTownsfolkForDrunk}
             getRoleInfo={getRoleInfo}
             TEAM_STYLES={TEAM_STYLES}
             onAssignToken={handleAssignToken}
             onUpdateSeatName={handleUpdateSeatName}
             onToggleDead={handleToggleDead}
+            onToggleDrunk={handleToggleDrunk}
+            onToggleTraveller={handleToggleTraveller}
+            onSetTravellerRole={handleSetTravellerRole}
+            onSetTravellerAlignment={handleSetTravellerAlignment}
+            onToggleReminder={handleToggleReminder}
             onAddSeat={handleAddSeat}
+            onAddTraveller={handleAddTraveller}
             onRemoveSeat={handleRemoveSeat}
             onShowToPlayer={(card) => setFullscreenCard(card)}
           />
