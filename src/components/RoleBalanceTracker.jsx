@@ -1,0 +1,300 @@
+import React from 'react';
+
+const PLAYER_COUNT_TABLE = {
+  5: { townsfolk: 3, outsider: 0, minion: 1, demon: 1 },
+  6: { townsfolk: 3, outsider: 1, minion: 1, demon: 1 },
+  7: { townsfolk: 5, outsider: 0, minion: 1, demon: 1 },
+  8: { townsfolk: 5, outsider: 1, minion: 1, demon: 1 },
+  9: { townsfolk: 5, outsider: 2, minion: 1, demon: 1 },
+  10: { townsfolk: 7, outsider: 0, minion: 2, demon: 1 },
+  11: { townsfolk: 7, outsider: 1, minion: 2, demon: 1 },
+  12: { townsfolk: 7, outsider: 2, minion: 2, demon: 1 },
+  13: { townsfolk: 9, outsider: 0, minion: 3, demon: 1 },
+  14: { townsfolk: 9, outsider: 1, minion: 3, demon: 1 },
+  15: { townsfolk: 9, outsider: 2, minion: 3, demon: 1 },
+};
+
+export default function RoleBalanceTracker({
+  playerCount,
+  bagRoles,
+  getRoleInfo,
+  onToggleRole,
+}) {
+  const base = PLAYER_COUNT_TABLE[playerCount] || PLAYER_COUNT_TABLE[8];
+  const hasBaron = bagRoles.includes('baron');
+
+  // Official Baron modifier: +2 Outsiders, -2 Townsfolk
+  const targetOutsiders = base.outsider + (hasBaron ? 2 : 0);
+  const targetTownsfolk = Math.max(0, base.townsfolk - (hasBaron ? 2 : 0));
+  const targetMinions = base.minion;
+  const targetDemons = base.demon;
+
+  const targetGood = targetTownsfolk + targetOutsiders;
+  const targetEvil = targetMinions + targetDemons;
+
+  const rolesWithInfo = bagRoles.map(getRoleInfo);
+  const selTownsfolk = rolesWithInfo.filter((r) => r.team === 'townsfolk');
+  const selOutsiders = rolesWithInfo.filter((r) => r.team === 'outsider');
+  const selMinions = rolesWithInfo.filter((r) => r.team === 'minion');
+  const selDemons = rolesWithInfo.filter((r) => r.team === 'demon');
+  const selUnknown = rolesWithInfo.filter((r) => r.team === 'unknown');
+
+  const currentGood = selTownsfolk.length + selOutsiders.length;
+  const currentEvil = selMinions.length + selDemons.length;
+  const totalSelected = bagRoles.length;
+
+  const isBalanced =
+    totalSelected === playerCount &&
+    selTownsfolk.length === targetTownsfolk &&
+    selOutsiders.length === targetOutsiders &&
+    selMinions.length === targetMinions &&
+    selDemons.length === targetDemons;
+
+  const renderSlots = (selected, target, colors, label) => {
+    const slotCount = Math.max(target, selected.length);
+    const slots = [];
+
+    for (let i = 0; i < slotCount; i++) {
+      const role = selected[i];
+      if (role) {
+        slots.push(
+          <button
+            key={role.id}
+            type="button"
+            onClick={() => onToggleRole(role.id)}
+            title={`Remove ${role.name} from bag`}
+            className={`group inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold shadow-sm transition-transform active:scale-95 border ${colors.badgeBg} ${colors.border} text-white`}
+          >
+            <span className="text-sm shrink-0">{role.icon}</span>
+            <span className="truncate max-w-[80px] sm:max-w-[100px]">{role.name}</span>
+            <span className="text-[10px] text-zinc-400 group-hover:text-rose-300 ml-0.5 font-bold">✕</span>
+          </button>
+        );
+      } else {
+        slots.push(
+          <div
+            key={`empty-${i}`}
+            className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[11px] border border-dashed ${colors.emptyBorder} ${colors.emptyBg} ${colors.emptyText}`}
+          >
+            <span>+ {label}</span>
+          </div>
+        );
+      }
+    }
+    return slots;
+  };
+
+  return (
+    <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 space-y-3 shadow-lg">
+      {/* Header with High-Level Formula and Status Pill */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2.5 border-b border-zinc-800/80">
+        <div>
+          <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+            Official Balance Breakdown:
+          </div>
+          <div className="text-xs font-semibold text-zinc-200 mt-0.5">
+            <span className="text-blue-400 font-bold">{targetGood} Good</span>
+            <span className="text-zinc-500 mx-1.5">vs</span>
+            <span className="text-red-400 font-bold">{targetEvil} Evil</span>
+            <span className="text-zinc-400 text-[11px] ml-1.5">
+              ({targetTownsfolk} TF + {targetOutsiders} Out / {targetMinions} Min + {targetDemons} Dem)
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 self-start sm:self-auto">
+          <span
+            className={`text-xs font-bold px-2.5 py-0.5 rounded-full border transition-all ${
+              isBalanced
+                ? 'bg-emerald-950/80 border-emerald-500/70 text-emerald-300 shadow-sm shadow-emerald-950'
+                : totalSelected === playerCount
+                ? 'bg-amber-950/80 border-amber-500/60 text-amber-300'
+                : totalSelected > playerCount
+                ? 'bg-rose-950/80 border-rose-500/60 text-rose-300'
+                : 'bg-zinc-800 border-zinc-700 text-zinc-300'
+            }`}
+          >
+            {isBalanced ? '✨ Balanced' : `${totalSelected}/${playerCount} in bag`}
+          </span>
+        </div>
+      </div>
+
+      {/* Baron Active Alert Badge */}
+      {hasBaron && (
+        <div className="bg-gradient-to-r from-amber-950/60 to-purple-950/40 border border-amber-500/50 rounded-xl px-3 py-2 text-xs flex items-center justify-between text-amber-200 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🎩</span>
+            <div>
+              <span className="font-bold text-amber-300">Baron Setup Modifier Active:</span>{' '}
+              <span className="text-zinc-200">Replaced 2 Townsfolk with <b>+2 Outsiders</b></span>
+            </div>
+          </div>
+          <span className="text-[10px] font-black bg-amber-500 text-zinc-950 px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 ml-2">
+            +2 OUT
+          </span>
+        </div>
+      )}
+
+      {/* Two Team Cards: Good vs Evil */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {/* GOOD TEAM CARD */}
+        <div className="bg-gradient-to-b from-blue-950/30 to-zinc-950 border border-blue-900/40 rounded-xl p-3 space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-blue-300">
+              <span>😇</span>
+              <span>GOOD TEAM</span>
+            </div>
+            <span
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                currentGood === targetGood
+                  ? 'bg-blue-900/60 text-blue-200 border border-blue-600/40'
+                  : 'bg-zinc-800/80 text-zinc-400'
+              }`}
+            >
+              {currentGood} / {targetGood}
+            </span>
+          </div>
+
+          {/* Townsfolk Slots */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <span className="text-blue-400 font-medium">Townsfolk:</span>
+              <span>
+                {selTownsfolk.length}/{targetTownsfolk}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 min-h-[30px] items-center">
+              {renderSlots(
+                selTownsfolk,
+                targetTownsfolk,
+                {
+                  badgeBg: 'bg-blue-950 hover:bg-blue-900/90',
+                  border: 'border-blue-500/70',
+                  emptyBorder: 'border-blue-700/50',
+                  emptyBg: 'bg-blue-950/20',
+                  emptyText: 'text-blue-400/50',
+                },
+                'Townsfolk'
+              )}
+            </div>
+          </div>
+
+          {/* Outsiders Slots */}
+          <div className="space-y-1 pt-1 border-t border-blue-950/60">
+            <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <span className="text-cyan-400 font-medium">Outsiders:</span>
+              <span>
+                {selOutsiders.length}/{targetOutsiders}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 min-h-[30px] items-center">
+              {renderSlots(
+                selOutsiders,
+                targetOutsiders,
+                {
+                  badgeBg: 'bg-cyan-950 hover:bg-cyan-900/90',
+                  border: 'border-cyan-500/70',
+                  emptyBorder: 'border-cyan-700/50',
+                  emptyBg: 'bg-cyan-950/20',
+                  emptyText: 'text-cyan-400/50',
+                },
+                'Outsider'
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* EVIL TEAM CARD */}
+        <div className="bg-gradient-to-b from-red-950/30 to-zinc-950 border border-red-900/40 rounded-xl p-3 space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-red-300">
+              <span>😈</span>
+              <span>EVIL TEAM</span>
+            </div>
+            <span
+              className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                currentEvil === targetEvil
+                  ? 'bg-red-900/60 text-red-200 border border-red-600/40'
+                  : 'bg-zinc-800/80 text-zinc-400'
+              }`}
+            >
+              {currentEvil} / {targetEvil}
+            </span>
+          </div>
+
+          {/* Minions Slots */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <span className="text-orange-400 font-medium">Minions:</span>
+              <span>
+                {selMinions.length}/{targetMinions}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 min-h-[30px] items-center">
+              {renderSlots(
+                selMinions,
+                targetMinions,
+                {
+                  badgeBg: 'bg-orange-950 hover:bg-orange-900/90',
+                  border: 'border-orange-500/70',
+                  emptyBorder: 'border-orange-700/50',
+                  emptyBg: 'bg-orange-950/20',
+                  emptyText: 'text-orange-400/50',
+                },
+                'Minion'
+              )}
+            </div>
+          </div>
+
+          {/* Demons Slots */}
+          <div className="space-y-1 pt-1 border-t border-red-950/60">
+            <div className="flex items-center justify-between text-[11px] text-zinc-400">
+              <span className="text-red-400 font-medium">Demons:</span>
+              <span>
+                {selDemons.length}/{targetDemons}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 min-h-[30px] items-center">
+              {renderSlots(
+                selDemons,
+                targetDemons,
+                {
+                  badgeBg: 'bg-red-950 hover:bg-red-900/90',
+                  border: 'border-red-500/70',
+                  emptyBorder: 'border-red-700/50',
+                  emptyBg: 'bg-red-950/20',
+                  emptyText: 'text-red-400/50',
+                },
+                'Demon'
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom / Travellers if present */}
+      {selUnknown.length > 0 && (
+        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400 uppercase">
+            <span>Custom / Travellers</span>
+            <span>{selUnknown.length}</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {renderSlots(
+              selUnknown,
+              selUnknown.length,
+              {
+                badgeBg: 'bg-zinc-800 hover:bg-zinc-700',
+                border: 'border-zinc-600',
+                emptyBorder: 'border-zinc-700',
+                emptyBg: 'bg-zinc-900',
+                emptyText: 'text-zinc-500',
+              },
+              'Custom'
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import NightFlashcards, { FullscreenFlashcard } from './components/NightFlashcards';
 import GrimoireCircle from './components/GrimoireCircle';
+import RoleBalanceTracker from './components/RoleBalanceTracker';
 
 const ROLES_DB = {
   washerwoman: ['Washerwoman', 'townsfolk', '🧺', 'You start knowing that 1 of 2 players is a specific Townsfolk.'],
@@ -33,20 +34,6 @@ const TEAM_STYLES = {
   minion: { label: 'Minions', border: 'border-orange-500', bg: 'bg-orange-950/60', text: 'text-orange-300', badge: 'bg-orange-600' },
   demon: { label: 'Demons', border: 'border-red-500', bg: 'bg-red-950/60', text: 'text-red-300', badge: 'bg-red-600' },
   unknown: { label: 'Custom / Other', border: 'border-zinc-500', bg: 'bg-zinc-900', text: 'text-zinc-300', badge: 'bg-zinc-600' },
-};
-
-const PLAYER_COUNT_TABLE = {
-  5: { townsfolk: 3, outsider: 0, minion: 1, demon: 1, label: '5' },
-  6: { townsfolk: 3, outsider: 1, minion: 1, demon: 1, label: '6' },
-  7: { townsfolk: 5, outsider: 0, minion: 1, demon: 1, label: '7' },
-  8: { townsfolk: 5, outsider: 1, minion: 1, demon: 1, label: '8' },
-  9: { townsfolk: 5, outsider: 2, minion: 1, demon: 1, label: '9' },
-  10: { townsfolk: 7, outsider: 0, minion: 2, demon: 1, label: '10' },
-  11: { townsfolk: 7, outsider: 1, minion: 2, demon: 1, label: '11' },
-  12: { townsfolk: 7, outsider: 2, minion: 2, demon: 1, label: '12' },
-  13: { townsfolk: 9, outsider: 0, minion: 3, demon: 1, label: '13' },
-  14: { townsfolk: 9, outsider: 1, minion: 3, demon: 1, label: '14' },
-  15: { townsfolk: 9, outsider: 2, minion: 3, demon: 1, label: '15' },
 };
 
 const getRoleInfo = (id) => {
@@ -201,17 +188,24 @@ export default function App() {
     return g;
   }, [scriptRoles]);
 
-  // Current bag counts
-  const currentBagCounts = useMemo(() => {
-    const counts = { townsfolk: 0, outsider: 0, minion: 0, demon: 0, unknown: 0 };
-    bagRoles.forEach((id) => {
-      const info = getRoleInfo(id);
-      counts[info.team] = (counts[info.team] || 0) + 1;
+  const handleSetPlayerCount = (num) => {
+    setPlayerCount(num);
+    setSeats((prev) => {
+      if (prev.length === num) return prev;
+      if (prev.length < num) {
+        const next = [...prev];
+        for (let i = prev.length; i < num; i++) {
+          next.push({ seat: i + 1, name: '', drawnToken: null, isDead: false });
+        }
+        return next;
+      }
+      const canSafelyShrink = prev.slice(num).every((s) => !s.drawnToken && !s.name);
+      if (canSafelyShrink) {
+        return prev.slice(0, num);
+      }
+      return prev;
     });
-    return counts;
-  }, [bagRoles]);
-
-  const recommendedBalance = PLAYER_COUNT_TABLE[playerCount] || PLAYER_COUNT_TABLE[8];
+  };
 
   const handleResetGame = () => {
     if (window.confirm('Reset current game? This will clear all seats and selected bag roles.')) {
@@ -310,20 +304,7 @@ export default function App() {
               {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((num) => (
                 <button
                   key={num}
-                  onClick={() => {
-                    setPlayerCount(num);
-                    // Dynamically adjust seats count if empty or matched
-                    if (seats.length === 0 || seats.every((s) => !s.drawnToken)) {
-                      setSeats(
-                        Array.from({ length: num }, (_, i) => ({
-                          seat: i + 1,
-                          name: seats[i]?.name || '',
-                          drawnToken: null,
-                          isDead: false,
-                        }))
-                      );
-                    }
-                  }}
+                  onClick={() => handleSetPlayerCount(num)}
                   className={`w-9 h-9 rounded-xl font-bold text-xs shrink-0 transition-all ${
                     playerCount === num
                       ? 'bg-amber-500 text-zinc-950 shadow-md scale-105'
@@ -334,28 +315,15 @@ export default function App() {
                 </button>
               ))}
             </div>
-
-            {/* Official Rulebook Balance Guide (Assistance, non-blocking) */}
-            <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] space-y-1.5">
-              <div className="text-zinc-400 font-medium">
-                Official Rulebook Balance for <b className="text-zinc-200">{playerCount} players:</b>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                <span className="text-blue-400">
-                  Townsfolk: {currentBagCounts.townsfolk}/{recommendedBalance.townsfolk}
-                </span>
-                <span className="text-cyan-400">
-                  Outsiders: {currentBagCounts.outsider}/{recommendedBalance.outsider}
-                </span>
-                <span className="text-orange-400">
-                  Minions: {currentBagCounts.minion}/{recommendedBalance.minion}
-                </span>
-                <span className="text-red-400">
-                  Demons: {currentBagCounts.demon}/{recommendedBalance.demon}
-                </span>
-              </div>
-            </div>
           </section>
+
+          {/* Good vs Evil Formula & Interactive Role Slots (Official BotC Rules) */}
+          <RoleBalanceTracker
+            playerCount={playerCount}
+            bagRoles={bagRoles}
+            getRoleInfo={getRoleInfo}
+            onToggleRole={toggleRoleInBag}
+          />
 
           {/* Drunk Disguise Inline Card (if Drunk is picked) */}
           {isDrunkInBag && (
