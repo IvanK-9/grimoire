@@ -1,28 +1,29 @@
 import React, { useState, useMemo } from 'react';
+import NightFlashcards, { FullscreenFlashcard } from './components/NightFlashcards';
 
 const ROLES_DB = {
-  washerwoman: ['Washerwoman', 'townsfolk'],
-  librarian: ['Librarian', 'townsfolk'],
-  investigator: ['Investigator', 'townsfolk'],
-  chef: ['Chef', 'townsfolk'],
-  empath: ['Empath', 'townsfolk'],
-  fortuneteller: ['Fortune Teller', 'townsfolk'],
-  undertaker: ['Undertaker', 'townsfolk'],
-  monk: ['Monk', 'townsfolk'],
-  ravenkeeper: ['Ravenkeeper', 'townsfolk'],
-  virgin: ['Virgin', 'townsfolk'],
-  slayer: ['Slayer', 'townsfolk'],
-  soldier: ['Soldier', 'townsfolk'],
-  mayor: ['Mayor', 'townsfolk'],
-  butler: ['Butler', 'outsider'],
-  drunk: ['Drunk', 'outsider'],
-  recluse: ['Recluse', 'outsider'],
-  saint: ['Saint', 'outsider'],
-  poisoner: ['Poisoner', 'minion'],
-  spy: ['Spy', 'minion'],
-  scarletwoman: ['Scarlet Woman', 'minion'],
-  baron: ['Baron', 'minion'],
-  imp: ['Imp', 'demon'],
+  washerwoman: ['Washerwoman', 'townsfolk', '🧺', 'You start knowing that 1 of 2 players is a specific Townsfolk.'],
+  librarian: ['Librarian', 'townsfolk', '📚', 'You start knowing that 1 of 2 players is a specific Outsider, or that zero are in play.'],
+  investigator: ['Investigator', 'townsfolk', '🔍', 'You start knowing that 1 of 2 players is a specific Minion.'],
+  chef: ['Chef', 'townsfolk', '🧑‍🍳', 'You start knowing how many pairs of evil players are sitting next to each other.'],
+  empath: ['Empath', 'townsfolk', '👁️', 'Each night, you learn how many of your 2 alive neighbours are evil.'],
+  fortuneteller: ['Fortune Teller', 'townsfolk', '🔮', 'Each night, choose 2 players: you learn if either is a Demon. 1 good player registers as a Demon.'],
+  undertaker: ['Undertaker', 'townsfolk', '⚰️', 'Each night*, you learn which character died by execution today.'],
+  monk: ['Monk', 'townsfolk', '🛡️', 'Each night*, choose a player (not yourself): they are safe from the Demon tonight.'],
+  ravenkeeper: ['Ravenkeeper', 'townsfolk', '🦅', 'If you die at night, you are woken to choose a player: you learn their character.'],
+  virgin: ['Virgin', 'townsfolk', '🕊️', 'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.'],
+  slayer: ['Slayer', 'townsfolk', '🏹', 'Once per game, during the day, publicly choose a player: if they are the Demon, they die.'],
+  soldier: ['Soldier', 'townsfolk', '⚔️', 'You are safe from the Demon.'],
+  mayor: ['Mayor', 'townsfolk', '🏛️', 'If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead.'],
+  butler: ['Butler', 'outsider', '🛎️', 'Each night, choose a master: you may only vote if they are voting too.'],
+  drunk: ['Drunk', 'outsider', '🍺', 'You do not know you are the Drunk. You think you are a Townsfolk, but you are not.'],
+  recluse: ['Recluse', 'outsider', '🦹', 'You might register as evil & as a Minion or Demon, even if dead.'],
+  saint: ['Saint', 'outsider', '😇', 'If you die by execution, your team loses.'],
+  poisoner: ['Poisoner', 'minion', '🧪', 'Each night, choose a player: they are poisoned tonight and tomorrow day.'],
+  spy: ['Spy', 'minion', '🕵️', 'Each night, you see the Grimoire. You might register as good & as a Townsfolk or Outsider, even if dead.'],
+  scarletwoman: ['Scarlet Woman', 'minion', '💃', 'If there are 5 or more players alive & the Demon dies, you become the Demon.'],
+  baron: ['Baron', 'minion', '🎩', 'There are extra Outsiders in play. [+2 Outsiders]'],
+  imp: ['Imp', 'demon', '😈', 'Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.'],
 };
 
 const TEAM_STYLES = {
@@ -36,9 +37,21 @@ const TEAM_STYLES = {
 const getRoleInfo = (id) => {
   const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (ROLES_DB[cleanId]) {
-    return { id: cleanId, name: ROLES_DB[cleanId][0], team: ROLES_DB[cleanId][1] };
+    return {
+      id: cleanId,
+      name: ROLES_DB[cleanId][0],
+      team: ROLES_DB[cleanId][1],
+      icon: ROLES_DB[cleanId][2] || '✦',
+      ability: ROLES_DB[cleanId][3] || '',
+    };
   }
-  return { id: cleanId, name: String(id).replace(/_/g, ' '), team: 'unknown' };
+  return {
+    id: cleanId,
+    name: String(id).replace(/_/g, ' '),
+    team: 'unknown',
+    icon: '✦',
+    ability: '',
+  };
 };
 
 export default function App() {
@@ -49,6 +62,7 @@ export default function App() {
   const [drunkDisguise, setDrunkDisguise] = useState('');
   const [seats, setSeats] = useState([]);
   const [selectedSeatIndex, setSelectedSeatIndex] = useState(null);
+  const [fullscreenCard, setFullscreenCard] = useState(null);
 
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -138,18 +152,33 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 pb-36 font-sans select-none">
+      <FullscreenFlashcard card={fullscreenCard} onClose={() => setFullscreenCard(null)} />
+
       <header className="sticky top-0 z-20 bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-base font-bold text-amber-400">BotC Pocket Grimoire</h1>
           <p className="text-xs text-zinc-400">Script: <b className="text-zinc-200">{scriptName}</b></p>
         </div>
-        <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-xs font-medium px-3 py-2 rounded-lg border border-zinc-700">
-          Load JSON
-          <input type="file" accept=".json,application/json" onChange={handleFileUpload} className="hidden" />
-        </label>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('night')}
+            className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${
+              activeTab === 'night'
+                ? 'bg-amber-500 text-zinc-950 border-amber-400'
+                : 'bg-zinc-800 text-amber-400 border-zinc-700 hover:bg-zinc-700'
+            }`}
+          >
+            <span>🌙</span>
+            <span className="hidden sm:inline">Big Text</span>
+          </button>
+          <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-xs font-medium px-3 py-1.5 rounded-lg border border-zinc-700">
+            Load JSON
+            <input type="file" accept=".json,application/json" onChange={handleFileUpload} className="hidden" />
+          </label>
+        </div>
       </header>
 
-      <div className="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800 text-sm font-medium">
+      <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-800 text-xs sm:text-sm font-medium">
         <button
           onClick={() => setActiveTab('bag')}
           className={`py-3 border-b-2 ${activeTab === 'bag' ? 'border-amber-400 text-amber-400 bg-zinc-800/40' : 'border-transparent text-zinc-400'}`}
@@ -162,6 +191,13 @@ export default function App() {
           className={`py-3 border-b-2 ${activeTab === 'seating' ? 'border-amber-400 text-amber-400 bg-zinc-800/40' : 'border-transparent text-zinc-400 disabled:opacity-40'}`}
         >
           2. Seats ({seats.filter((s) => s.drawnToken).length}/{bagRoles.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('night')}
+          className={`py-3 border-b-2 flex items-center justify-center gap-1 ${activeTab === 'night' ? 'border-amber-400 text-amber-400 bg-zinc-800/40' : 'border-transparent text-zinc-400'}`}
+        >
+          <span>3. Prompts</span>
+          <span className="text-xs">🌙</span>
         </button>
       </div>
 
@@ -185,9 +221,12 @@ export default function App() {
                           sel ? `${st.bg} ${st.border} text-white` : dis ? 'bg-amber-950/40 border-amber-500 text-amber-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400'
                         }`}
                       >
-                        <span className="truncate">{r.name}</span>
-                        {sel && <span className={`w-2.5 h-2.5 rounded-full ${st.badge}`} />}
-                        {dis && <span className="text-[10px] font-bold bg-amber-500 text-zinc-950 px-1.5 rounded">DRUNK</span>}
+                        <span className="truncate flex items-center gap-1.5">
+                          <span>{r.icon}</span>
+                          <span>{r.name}</span>
+                        </span>
+                        {sel && <span className={`w-2.5 h-2.5 rounded-full ${st.badge} shrink-0`} />}
+                        {dis && <span className="text-[10px] font-bold bg-amber-500 text-zinc-950 px-1.5 rounded shrink-0">DRUNK</span>}
                       </button>
                     );
                   })}
@@ -235,7 +274,10 @@ export default function App() {
                 <span className="text-emerald-400 font-bold">All tokens assigned!</span>
               ) : (
                 unassignedTokens.map((id) => (
-                  <span key={id} className="px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700">{getRoleInfo(id).name}</span>
+                  <span key={id} className="px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 flex items-center gap-1">
+                    <span>{getRoleInfo(id).icon}</span>
+                    <span>{getRoleInfo(id).name}</span>
+                  </span>
                 ))
               )}
             </div>
@@ -262,18 +304,38 @@ export default function App() {
                       className="bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none w-full truncate"
                     />
                   </div>
-                  <button
-                    onClick={() => setSelectedSeatIndex(idx)}
-                    className="shrink-0 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-400"
-                  >
-                    {drawn ? (
-                      <span className="text-white">
-                        {drawn.name} {isDrunk && <b className="bg-amber-500 text-zinc-950 px-1 rounded ml-1">DRUNK</b>}
-                      </span>
-                    ) : (
-                      '+ Assign Role'
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {drawn && (
+                      <button
+                        onClick={() =>
+                          setFullscreenCard({
+                            title: actual.name,
+                            subtitle: s.name ? `Seat #${s.seat} • ${s.name}` : `Seat #${s.seat}`,
+                            icon: actual.icon,
+                            team: actual.team,
+                            teamLabel: isDrunk ? 'OUTSIDER (DRUNK)' : actual.team.toUpperCase(),
+                            description: actual.ability,
+                          })
+                        }
+                        title="Show role to player in Big Text"
+                        className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2 py-1.5 rounded-lg text-xs text-zinc-300 hover:text-white"
+                      >
+                        👁️ Show
+                      </button>
                     )}
-                  </button>
+                    <button
+                      onClick={() => setSelectedSeatIndex(idx)}
+                      className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-400"
+                    >
+                      {drawn ? (
+                        <span className="text-white">
+                          {drawn.name} {isDrunk && <b className="bg-amber-500 text-zinc-950 px-1 rounded ml-1">DRUNK</b>}
+                        </span>
+                      ) : (
+                        '+ Assign Role'
+                      )}
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -284,7 +346,7 @@ export default function App() {
               <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center border-b border-zinc-800 pb-2">
                   <span className="font-bold text-sm">Seat #{seats[selectedSeatIndex].seat} — Select Drawn Token</span>
-                  <button onClick={() => setSelectedSeatIndex(null)} className="text-zinc-400 px-2">X</button>
+                  <button onClick={() => setSelectedSeatIndex(null)} className="text-zinc-400 px-2">✕</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
                   {physicalTokensInBag.map((tid) => {
@@ -300,7 +362,10 @@ export default function App() {
                           curr ? 'border-amber-400 bg-amber-500/20' : taken ? 'opacity-40 bg-zinc-950 border-zinc-800' : 'bg-zinc-800 border-zinc-700'
                         }`}
                       >
-                        <div className="font-bold text-sm">{info.name}</div>
+                        <div className="font-bold text-sm flex items-center gap-1.5">
+                          <span>{info.icon}</span>
+                          <span>{info.name}</span>
+                        </div>
                         <div className="text-zinc-400">{taken ? `Seat #${taken.seat}` : 'In bag'}</div>
                       </button>
                     );
@@ -315,6 +380,15 @@ export default function App() {
             </div>
           )}
         </main>
+      )}
+
+      {activeTab === 'night' && (
+        <NightFlashcards
+          scriptRoles={scriptRoles}
+          bagRoles={bagRoles}
+          getRoleInfo={getRoleInfo}
+          onShowCard={(card) => setFullscreenCard(card)}
+        />
       )}
     </div>
   );
