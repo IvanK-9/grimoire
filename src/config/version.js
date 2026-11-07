@@ -1,7 +1,7 @@
 // Global build-time constants injected by Vite via `define` in vite.config.js
 /* global __APP_VERSION__, __GIT_HASH__, __BUILD_TIME__ */
 
-export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.3.1';
+export const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.3.2';
 export const GIT_HASH = typeof __GIT_HASH__ !== 'undefined' ? __GIT_HASH__ : 'dev';
 export const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '';
 
@@ -14,12 +14,12 @@ export const GITHUB_COMMIT_URL =
     : `${GITHUB_REPO}/commits/development`;
 
 export const RELEASE_HIGHLIGHTS = [
+  'v0.3.2: Ghost Vote Tracker (canonical 👻 vote token on dead seats with available/spent toggle)',
+  'v0.3.2: Quick Undo button (15-step rolling history stack for all table actions)',
+  'v0.3.2: Documented canonical design in ADR-0009',
   'v0.3.1: Fixed Drunk token count bug & integrated Drunk Townsfolk disguise selector',
   'v0.3.1: Added 3 Demon Bluffs widget (auto-roll & fullscreen display for Demon/Spy)',
-  'v0.3.1: Clickable empty bag slots (jump straight to team selection)',
-  'v0.3.1: High-visibility fullscreen token card text for night storytelling',
-  'v0.3.1: Cleaned up redundant bag alerts & streamlined mobile scrolling',
+  'v0.3.1: Clickable empty bag slots & high-contrast night card text',
   '5 Top-Level Sections: Home, Compendium, Scripts, Games, Messages',
-  'Compendium with Characters subsection (~130 roles, abilities & reminders)',
   'PWA offline ready with auto-updating Service Worker',
 ];

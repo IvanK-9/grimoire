@@ -46,6 +46,7 @@ function sanitizeSeats(rawSeats, count) {
       travellerAlignment: s?.travellerAlignment === 'evil' ? 'evil' : 'good',
       reminders: Array.isArray(s?.reminders) ? s.reminders.filter(Boolean) : [],
       isDead: Boolean(s?.isDead),
+      hasGhostVote: typeof s?.hasGhostVote === 'boolean' ? s.hasGhostVote : true,
     };
   });
 }
@@ -140,8 +141,26 @@ export default function App() {
     [bagRoles, drunkDisguise]
   );
 
+  // Undo Stack (last 15 table snapshots)
+  const [undoStack, setUndoStack] = useState([]);
+
+  const updateSeats = (updater) => {
+    setSeats((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      setUndoStack((uPrev) => [...uPrev.slice(-14), prev]);
+      return next;
+    });
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previousSeats = undoStack[undoStack.length - 1];
+    setUndoStack((uPrev) => uPrev.slice(0, -1));
+    setSeats(previousSeats);
+  };
+
   const handleAssignToken = (idx, token) => {
-    setSeats((prev) =>
+    updateSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
         const isDrunkToken = Boolean(
@@ -158,7 +177,7 @@ export default function App() {
   };
 
   const handleToggleDrunk = (idx) => {
-    setSeats((prev) =>
+    updateSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
         const willBeDrunk = !s.isDrunk;
@@ -180,7 +199,7 @@ export default function App() {
   };
 
   const handleToggleTraveller = (idx) => {
-    setSeats((prev) =>
+    updateSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
         const nextTrav = !s.isTraveller;
@@ -195,19 +214,19 @@ export default function App() {
   };
 
   const handleSetTravellerRole = (idx, roleId) => {
-    setSeats((prev) =>
+    updateSeats((prev) =>
       prev.map((s, i) => (i === idx ? { ...s, drawnToken: roleId, isTraveller: true } : s))
     );
   };
 
   const handleSetTravellerAlignment = (idx, alignment) => {
-    setSeats((prev) =>
+    updateSeats((prev) =>
       prev.map((s, i) => (i === idx ? { ...s, travellerAlignment: alignment } : s))
     );
   };
 
   const handleToggleReminder = (idx, reminder) => {
-    setSeats((prev) =>
+    updateSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
         const currentReminders = s.reminders || [];
@@ -220,15 +239,37 @@ export default function App() {
   };
 
   const handleUpdateSeatName = (idx, name) => {
-    setSeats((prev) => prev.map((s, i) => (i === idx ? { ...s, name } : s)));
+    updateSeats((prev) => prev.map((s, i) => (i === idx ? { ...s, name } : s)));
   };
 
   const handleToggleDead = (idx) => {
-    setSeats((prev) => prev.map((s, i) => (i === idx ? { ...s, isDead: !s.isDead } : s)));
+    updateSeats((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        const willBeDead = !s.isDead;
+        return {
+          ...s,
+          isDead: willBeDead,
+          hasGhostVote: true,
+        };
+      })
+    );
+  };
+
+  const handleToggleGhostVote = (idx) => {
+    updateSeats((prev) =>
+      prev.map((s, i) => {
+        if (i !== idx) return s;
+        return {
+          ...s,
+          hasGhostVote: s.hasGhostVote === false ? true : false,
+        };
+      })
+    );
   };
 
   const handleAddSeat = () => {
-    setSeats((prev) => [
+    updateSeats((prev) => [
       ...prev,
       {
         seat: prev.length + 1,
@@ -239,12 +280,13 @@ export default function App() {
         travellerAlignment: 'good',
         reminders: [],
         isDead: false,
+        hasGhostVote: true,
       },
     ]);
   };
 
   const handleAddTraveller = () => {
-    setSeats((prev) => [
+    updateSeats((prev) => [
       ...prev,
       {
         seat: prev.length + 1,
@@ -255,12 +297,13 @@ export default function App() {
         travellerAlignment: 'good',
         reminders: [],
         isDead: false,
+        hasGhostVote: true,
       },
     ]);
   };
 
   const handleRemoveSeat = (idx) => {
-    setSeats((prev) => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, seat: i + 1 })));
+    updateSeats((prev) => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, seat: i + 1 })));
   };
 
   const groupedScript = useMemo(() => {
@@ -308,6 +351,7 @@ export default function App() {
     setBagRoles([]);
     setDrunkDisguise('');
     setDemonBluffs([]);
+    setUndoStack([]);
     setSeats(sanitizeSeats([], playerCount));
   };
 
@@ -692,6 +736,10 @@ export default function App() {
           onAssignToken={handleAssignToken}
           onUpdateSeatName={handleUpdateSeatName}
           onToggleDead={handleToggleDead}
+          onToggleGhostVote={handleToggleGhostVote}
+          onUndo={handleUndo}
+          canUndo={undoStack.length > 0}
+          undoCount={undoStack.length}
           onToggleDrunk={handleToggleDrunk}
           onToggleTraveller={handleToggleTraveller}
           onSetTravellerRole={handleSetTravellerRole}

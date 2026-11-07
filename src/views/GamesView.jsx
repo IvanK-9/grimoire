@@ -25,6 +25,10 @@ export default function GamesView({
   onAssignToken,
   onUpdateSeatName,
   onToggleDead,
+  onToggleGhostVote,
+  onUndo,
+  canUndo = false,
+  undoCount = 0,
   onToggleDrunk,
   onToggleTraveller,
   onSetTravellerRole,
@@ -374,6 +378,36 @@ export default function GamesView({
           {/* TAB 2: TABLE CIRCLE */}
           {currentLiveTab === 'table' && (
             <main className="p-4 max-w-lg mx-auto w-full flex-1">
+              {/* Town Square Toolbar with Undo */}
+              <div className="flex items-center justify-between gap-2 mb-3 bg-zinc-900/70 border border-zinc-800 rounded-xl px-3 py-1.5 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">⭕</span>
+                  <span className="text-xs font-bold text-zinc-200">Table Circle</span>
+                  <span className="text-[10px] text-zinc-500 font-medium">({seats.length} seats)</span>
+                </div>
+                {onUndo && (
+                  <button
+                    type="button"
+                    onClick={onUndo}
+                    disabled={!canUndo}
+                    title={canUndo ? `Undo last change (${undoCount} in history)` : 'No actions to undo'}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border shadow-sm ${
+                      canUndo
+                        ? 'bg-zinc-800 hover:bg-zinc-700 text-amber-300 border-zinc-600 active:scale-95 cursor-pointer'
+                        : 'bg-zinc-950/60 text-zinc-600 border-zinc-800/60 cursor-not-allowed opacity-50'
+                    }`}
+                  >
+                    <span>↩</span>
+                    <span>Undo</span>
+                    {undoCount > 0 && (
+                      <span className="text-[10px] bg-zinc-900 text-amber-400 font-mono px-1.5 py-0.2 rounded-full border border-amber-500/30">
+                        {undoCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
+
               {/* Unassigned Tokens in Bag Helper Banner */}
               {physicalTokensInBag.length > 0 && (
                 <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 mb-3 text-xs shadow-md">
@@ -510,6 +544,7 @@ export default function GamesView({
                 onAssignToken={onAssignToken}
                 onUpdateSeatName={onUpdateSeatName}
                 onToggleDead={onToggleDead}
+                onToggleGhostVote={onToggleGhostVote}
                 onToggleDrunk={onToggleDrunk}
                 onToggleTraveller={onToggleTraveller}
                 onSetTravellerRole={onSetTravellerRole}

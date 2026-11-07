@@ -18,6 +18,7 @@ export default function GrimoireCircle({
   onAssignToken,
   onUpdateSeatName,
   onToggleDead,
+  onToggleGhostVote,
   onToggleDrunk,
   onToggleTraveller,
   onSetTravellerRole,
@@ -166,6 +167,17 @@ export default function GrimoireCircle({
           </div>
           <div className="text-[11px] text-zinc-400 font-medium">Alive Players</div>
 
+          {/* Ghost Vote Total */}
+          {seats.some((s) => s.isDead) && (
+            <div className="mt-1 text-[11px] font-bold text-zinc-300 flex items-center justify-center gap-1">
+              <span>👻</span>
+              <span>
+                {seats.filter((s) => s.isDead && s.hasGhostVote !== false).length} / {seats.filter((s) => s.isDead).length}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-normal">ghost votes</span>
+            </div>
+          )}
+
           {selectedSeatIdx !== null && (
             <div className="mt-2 text-[10px] text-amber-300/90 bg-zinc-900/90 px-2 py-1 rounded-lg border border-amber-500/30">
               {selectedSeat?.isTraveller ? (
@@ -284,6 +296,28 @@ export default function GrimoireCircle({
                   </span>
                 )}
               </div>
+
+              {/* Ghost Vote Badge for Dead Players */}
+              {s.isDead && (
+                <div className="mt-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onToggleGhostVote) onToggleGhostVote(idx);
+                    }}
+                    title={s.hasGhostVote !== false ? 'Ghost Vote Available (Click to mark spent)' : 'Ghost Vote Spent (Click to restore)'}
+                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border transition-all ${
+                      s.hasGhostVote !== false
+                        ? 'bg-zinc-800 text-zinc-100 border-zinc-400 shadow-sm animate-pulse hover:bg-zinc-700'
+                        : 'bg-zinc-950/80 text-zinc-600 border-zinc-800 line-through opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <span>👻</span>
+                    <span>{s.hasGhostVote !== false ? 'Vote' : 'Spent'}</span>
+                  </button>
+                </div>
+              )}
 
               {/* Player Name / Short Label */}
               <div className="max-w-[70px] mt-1 text-center">
@@ -564,6 +598,29 @@ export default function GrimoireCircle({
                   ? `🔒 Safe: Displays only ${selectedSeatInfo.shownRole?.name} card.`
                   : 'Displays high-contrast fullscreen card.'}
               </div>
+            </div>
+          )}
+
+          {/* Ghost Vote Toggle for Dead Player */}
+          {selectedSeat.isDead && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => onToggleGhostVote && onToggleGhostVote(selectedSeatIdx)}
+                className={`w-full py-2 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 border transition-all ${
+                  selectedSeat.hasGhostVote !== false
+                    ? 'bg-zinc-800 hover:bg-zinc-750 border-zinc-500 text-zinc-100 shadow-sm'
+                    : 'bg-zinc-950 hover:bg-zinc-900 border-zinc-800 text-zinc-500 line-through'
+                }`}
+              >
+                <span>👻</span>
+                <span>
+                  Ghost Vote: {selectedSeat.hasGhostVote !== false ? 'Available (1 vote ready)' : 'Spent (0 votes left)'}
+                </span>
+                <span className="text-[10px] text-zinc-400 font-normal">
+                  ({selectedSeat.hasGhostVote !== false ? 'tap to spend' : 'tap to restore'})
+                </span>
+              </button>
             </div>
           )}
 

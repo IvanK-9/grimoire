@@ -16,6 +16,7 @@ One decision per file: `NNNN-short-name.md`. See [ADR 0001](0001-record-decision
 | [0006](0006-distribution-and-delivery.md) | Private sideload distribution, phased delivery | Superseded by 0008 |
 | [0007](0007-assist-never-enforce.md) | Assist, never enforce | Accepted |
 | [0008](0008-pwa-web-architecture.md) | PWA Web Architecture with React 19, Vite, and Offline Service Worker | Accepted |
+| [0009](0009-ghost-votes-and-undo-history.md) | Ghost Vote Tracker and Non-Destructive Undo History | Accepted |
 
 ## Template
 
