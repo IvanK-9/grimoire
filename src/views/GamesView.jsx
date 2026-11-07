@@ -539,6 +539,8 @@ export default function GamesView({
                 drunkDisguise={drunkDisguise}
                 physicalTokensInBag={physicalTokensInBag}
                 availableTownsfolk={availableTownsfolkForDrunk}
+                scriptRoles={scriptRoles}
+                scriptName={scriptName}
                 getRoleInfo={getRoleInfo}
                 TEAM_STYLES={TEAM_STYLES}
                 onAssignToken={onAssignToken}

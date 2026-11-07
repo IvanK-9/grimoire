@@ -1,18 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { TRAVELLERS_DB } from '../data/travellers';
-
-const AVAILABLE_REMINDERS = [
-  { id: 'Poisoned', icon: '🧪', label: 'Poisoned' },
-  { id: 'Safe', icon: '🛡️', label: 'Safe' },
-  { id: 'Mad', icon: '🤪', label: 'Mad' },
-  { id: 'Ghost Vote Used', icon: '👻', label: 'Ghost Vote Used' },
-];
+import { getScriptTravellers, getAllTravellers } from '../data/travellers';
+import { ROLE_REMINDERS_DB, getAvailableReminders, resolveReminderInfo } from '../data/reminders';
 
 export default function GrimoireCircle({
   seats,
   drunkDisguise,
   physicalTokensInBag,
   availableTownsfolk = [],
+  scriptRoles = [],
+  scriptName = '',
   getRoleInfo,
   TEAM_STYLES,
   onAssignToken,
@@ -32,6 +28,9 @@ export default function GrimoireCircle({
   const [selectedSeatIdx, setSelectedSeatIdx] = useState(null);
   const [showTokenPicker, setShowTokenPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState('bag'); // 'bag' | 'traveller' | 'drunkDisguise'
+  const [travellerFilter, setTravellerFilter] = useState('script'); // 'script' | 'all'
+  const [reminderTab, setReminderTab] = useState('in_play'); // 'in_play' | 'all'
+  const [customReminderInput, setCustomReminderInput] = useState('');
 
   const seatCount = seats.length;
 
@@ -107,6 +106,40 @@ export default function GrimoireCircle({
 
     return { isDrunk, isTraveller, actualRole, shownRole };
   }, [selectedSeat, drunkDisguise, availableTownsfolk, getRoleInfo]);
+
+  // Collect active role IDs (from script roles + seated tokens)
+  const activeRoleIds = useMemo(() => {
+    const set = new Set();
+    if (Array.isArray(scriptRoles)) {
+      scriptRoles.forEach((r) => {
+        const id = typeof r === 'string' ? r : r?.id;
+        if (id) set.add(id);
+      });
+    }
+    seats.forEach((s) => {
+      if (s.drawnToken) set.add(s.drawnToken);
+    });
+    return Array.from(set);
+  }, [scriptRoles, seats]);
+
+  // Reminders for active roles in game + generic
+  const inPlayReminders = useMemo(() => {
+    return getAvailableReminders(activeRoleIds);
+  }, [activeRoleIds]);
+
+  // All reminders across all canonical roles in database
+  const allRemindersList = useMemo(() => {
+    return getAvailableReminders(Object.keys(ROLE_REMINDERS_DB));
+  }, []);
+
+  // Travellers list filtered by script or showing all
+  const displayedTravellers = useMemo(() => {
+    if (travellerFilter === 'all') {
+      return getAllTravellers();
+    }
+    const list = getScriptTravellers(scriptName);
+    return list.length > 0 ? list : getAllTravellers();
+  }, [travellerFilter, scriptName]);
 
   // Show to Player action — strictly protects Drunk secrecy
   const handleShowToPlayer = () => {
@@ -208,8 +241,6 @@ export default function GrimoireCircle({
           const isSelected = selectedSeatIdx === idx;
           const isNeighbour = livingNeighbours.left === idx || livingNeighbours.right === idx;
           const reminders = s.reminders || [];
-          const hasPoison = reminders.includes('Poisoned');
-          const hasSafe = reminders.includes('Safe');
 
           return (
             <div
@@ -271,22 +302,19 @@ export default function GrimoireCircle({
                   </span>
                 )}
 
-                {/* Reminder Pips */}
-                {hasPoison && (
-                  <span
-                    title="Poisoned"
-                    className="absolute -top-1.5 -right-1 text-[10px]"
+                {/* Canonical Reminder Badge on Avatar (ST & Spy) */}
+                {reminders.length > 0 && (
+                  <div
+                    title={`Reminders: ${reminders.map((r) => resolveReminderInfo(r).label).join(', ')}`}
+                    className="absolute -top-1.5 -right-1.5 flex items-center bg-zinc-950 border border-amber-500/70 rounded-full px-1 py-0.2 shadow-md z-20"
                   >
-                    🧪
-                  </span>
-                )}
-                {hasSafe && !hasPoison && (
-                  <span
-                    title="Safe from Demon"
-                    className="absolute -top-1.5 -right-1 text-[10px]"
-                  >
-                    🛡️
-                  </span>
+                    <span className="text-[10px] leading-none">{resolveReminderInfo(reminders[0]).icon}</span>
+                    {reminders.length > 1 && (
+                      <span className="text-[8px] font-black text-amber-300 ml-0.5 leading-none">
+                        +{reminders.length - 1}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {/* Dead Shroud Skull */}
@@ -320,13 +348,32 @@ export default function GrimoireCircle({
               )}
 
               {/* Player Name / Short Label */}
-              <div className="max-w-[70px] mt-1 text-center">
+              <div className="max-w-[76px] mt-1 text-center">
                 <div className="text-[11px] font-bold text-zinc-200 truncate leading-tight">
                   {s.name || `#${s.seat}`}
                 </div>
                 {shown && (
                   <div className="text-[9px] text-zinc-400 truncate leading-tight">
                     {isDrunk ? `${shown.name}*` : shown.name}
+                  </div>
+                )}
+
+                {/* Canonical Reminder Tokens on Seat (Vital for ST & Spy) */}
+                {reminders.length > 0 && (
+                  <div className="flex flex-wrap justify-center gap-0.5 max-w-[84px] mt-0.5">
+                    {reminders.map((remId) => {
+                      const info = resolveReminderInfo(remId);
+                      return (
+                        <span
+                          key={remId}
+                          title={info.label}
+                          className="inline-flex items-center gap-0.5 text-[8px] bg-zinc-950/90 text-amber-300 border border-amber-500/40 rounded px-1 py-0.2 leading-tight shadow-sm"
+                        >
+                          <span className="text-[8px]">{info.icon}</span>
+                          <span className="truncate max-w-[48px] font-medium">{info.label}</span>
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -555,31 +602,116 @@ export default function GrimoireCircle({
             </button>
           </div>
 
-          {/* Reminders / Status Tokens Bar */}
-          <div className="space-y-1.5 pt-1">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-              Reminder Tokens:
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {AVAILABLE_REMINDERS.map((rem) => {
-                const active = (selectedSeat.reminders || []).includes(rem.id);
-                return (
+          {/* Canonical Role Reminder Tokens (Essential for ST & Spy) */}
+          <div className="space-y-2 pt-1 border-t border-zinc-800">
+            {/* Active tokens currently placed on this seat */}
+            {selectedSeat.reminders && selectedSeat.reminders.length > 0 && (
+              <div className="p-2 rounded-xl bg-zinc-950 border border-amber-500/30 space-y-1.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center justify-between">
+                  <span>Tokens on this seat ({selectedSeat.reminders.length}):</span>
+                  <span className="text-[9px] text-zinc-500 font-normal">Tap to remove</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedSeat.reminders.map((remId) => {
+                    const info = resolveReminderInfo(remId);
+                    return (
+                      <button
+                        key={remId}
+                        type="button"
+                        onClick={() => onToggleReminder(selectedSeatIdx, remId)}
+                        className="text-xs font-semibold px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-rose-950/40 border border-amber-500/70 hover:border-rose-500 text-amber-200 hover:text-rose-200 transition-all flex items-center gap-1 shadow-sm"
+                        title="Click to remove token from seat"
+                      >
+                        <span>{info.icon}</span>
+                        <span>{info.label}</span>
+                        <span className="text-[10px] text-rose-400 font-bold ml-0.5">✕</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Reminder Tokens Picker */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  Add Reminder Token:
+                </div>
+                <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
                   <button
-                    key={rem.id}
                     type="button"
-                    onClick={() => onToggleReminder(selectedSeatIdx, rem.id)}
-                    className={`text-[11px] font-semibold px-2 py-1 rounded-lg border transition-all flex items-center gap-1 ${
-                      active
-                        ? 'bg-amber-500/20 border-amber-500/80 text-amber-200'
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    onClick={() => setReminderTab('in_play')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                      reminderTab === 'in_play'
+                        ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
+                        : 'text-zinc-500 hover:text-zinc-300'
                     }`}
                   >
-                    <span>{rem.icon}</span>
-                    <span>{rem.label}</span>
-                    {active && <span className="text-[10px] text-amber-400 font-bold ml-0.5">✓</span>}
+                    Script ({inPlayReminders.length})
                   </button>
-                );
-              })}
+                  <button
+                    type="button"
+                    onClick={() => setReminderTab('all')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                      reminderTab === 'all'
+                        ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    All Roles ({allRemindersList.length})
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                {(reminderTab === 'in_play' ? inPlayReminders : allRemindersList).map((rem) => {
+                  const active = (selectedSeat.reminders || []).includes(rem.id);
+                  return (
+                    <button
+                      key={rem.id}
+                      type="button"
+                      onClick={() => onToggleReminder(selectedSeatIdx, rem.id)}
+                      className={`text-[11px] font-semibold px-2 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                        active
+                          ? 'bg-amber-500/25 border-amber-400 text-amber-100 shadow-sm'
+                          : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                      }`}
+                    >
+                      <span>{rem.icon}</span>
+                      <span>{rem.label}</span>
+                      {active && <span className="text-[10px] text-amber-400 font-black ml-0.5">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Quick Token Input */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (customReminderInput.trim()) {
+                    onToggleReminder(selectedSeatIdx, customReminderInput.trim());
+                    setCustomReminderInput('');
+                  }
+                }}
+                className="flex items-center gap-1.5 pt-1"
+              >
+                <input
+                  type="text"
+                  placeholder="Custom token label..."
+                  value={customReminderInput}
+                  onChange={(e) => setCustomReminderInput(e.target.value)}
+                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-500/60"
+                />
+                <button
+                  type="submit"
+                  disabled={!customReminderInput.trim()}
+                  className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-750 disabled:opacity-40 text-amber-300 text-xs font-bold rounded-lg border border-zinc-700 transition-colors"
+                >
+                  + Add
+                </button>
+              </form>
             </div>
           </div>
 
@@ -678,32 +810,78 @@ export default function GrimoireCircle({
 
             {/* Content for TRAVELLERS */}
             {pickerMode === 'traveller' && (
-              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-                {Object.values(TRAVELLERS_DB).map((t) => {
-                  const isCurrent = seats[selectedSeatIdx].drawnToken === t.id;
-                  return (
+              <div className="space-y-2.5">
+                {/* Script vs All Travellers Toggle */}
+                <div className="flex items-center justify-between gap-1 pb-1 border-b border-zinc-800 text-xs">
+                  <div className="text-[11px] text-zinc-400 font-medium">
+                    Filter Travellers:
+                  </div>
+                  <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
                     <button
-                      key={t.id}
-                      onClick={() => {
-                        onSetTravellerRole(selectedSeatIdx, t.id);
-                        setShowTokenPicker(false);
-                      }}
-                      className={`p-2.5 rounded-xl border text-left text-xs transition-colors ${
-                        isCurrent
-                          ? 'border-purple-400 bg-purple-500/20'
-                          : 'bg-zinc-800 hover:bg-zinc-750 border-zinc-700'
+                      type="button"
+                      onClick={() => setTravellerFilter('script')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        travellerFilter === 'script'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-200'
                       }`}
                     >
-                      <div className="font-bold text-sm flex items-center gap-1.5 text-zinc-100">
-                        <span>{t.icon}</span>
-                        <span className="truncate">{t.name}</span>
-                      </div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5 line-clamp-2">
-                        {t.ability}
-                      </div>
+                      ⭐ Script ({getScriptTravellers(scriptName).length})
                     </button>
-                  );
-                })}
+                    <button
+                      type="button"
+                      onClick={() => setTravellerFilter('all')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        travellerFilter === 'all'
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      🌐 All ({getAllTravellers().length})
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-0.5">
+                  {displayedTravellers.map((t) => {
+                    const isCurrent = seats[selectedSeatIdx].drawnToken === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          onSetTravellerRole(selectedSeatIdx, t.id);
+                          setShowTokenPicker(false);
+                        }}
+                        className={`p-2.5 rounded-xl border text-left text-xs transition-colors flex flex-col justify-between ${
+                          isCurrent
+                            ? 'border-purple-400 bg-purple-500/20'
+                            : 'bg-zinc-800 hover:bg-zinc-750 border-zinc-700'
+                        }`}
+                      >
+                        <div>
+                          <div className="font-bold text-sm flex items-center justify-between gap-1 text-zinc-100">
+                            <span className="flex items-center gap-1.5 truncate">
+                              <span>{t.icon}</span>
+                              <span className="truncate">{t.name}</span>
+                            </span>
+                            {t.isExperimental ? (
+                              <span className="shrink-0 text-[8px] uppercase font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded">
+                                Exp
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-[8px] uppercase font-bold text-purple-300/80 bg-purple-950/60 px-1 py-0.2 rounded border border-purple-800/40">
+                                {t.edition.toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 mt-1 line-clamp-3 leading-relaxed">
+                            {t.ability}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
