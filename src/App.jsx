@@ -2,32 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import NightFlashcards, { FullscreenFlashcard } from './components/NightFlashcards';
 import GrimoireCircle from './components/GrimoireCircle';
 import RoleBalanceTracker from './components/RoleBalanceTracker';
-import { TRAVELLERS_DB } from './data/travellers';
-
-const ROLES_DB = {
-  washerwoman: ['Washerwoman', 'townsfolk', '🧺', 'You start knowing that 1 of 2 players is a specific Townsfolk.'],
-  librarian: ['Librarian', 'townsfolk', '📚', 'You start knowing that 1 of 2 players is a specific Outsider, or that zero are in play.'],
-  investigator: ['Investigator', 'townsfolk', '🔍', 'You start knowing that 1 of 2 players is a specific Minion.'],
-  chef: ['Chef', 'townsfolk', '🧑‍🍳', 'You start knowing how many pairs of evil players are sitting next to each other.'],
-  empath: ['Empath', 'townsfolk', '👁️', 'Each night, you learn how many of your 2 alive neighbours are evil.'],
-  fortuneteller: ['Fortune Teller', 'townsfolk', '🔮', 'Each night, choose 2 players: you learn if either is a Demon. 1 good player registers as a Demon.'],
-  undertaker: ['Undertaker', 'townsfolk', '⚰️', 'Each night*, you learn which character died by execution today.'],
-  monk: ['Monk', 'townsfolk', '🛡️', 'Each night*, choose a player (not yourself): they are safe from the Demon tonight.'],
-  ravenkeeper: ['Ravenkeeper', 'townsfolk', '🦅', 'If you die at night, you are woken to choose a player: you learn their character.'],
-  virgin: ['Virgin', 'townsfolk', '🕊️', 'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.'],
-  slayer: ['Slayer', 'townsfolk', '🏹', 'Once per game, during the day, publicly choose a player: if they are the Demon, they die.'],
-  soldier: ['Soldier', 'townsfolk', '⚔️', 'You are safe from the Demon.'],
-  mayor: ['Mayor', 'townsfolk', '🏛️', 'If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead.'],
-  butler: ['Butler', 'outsider', '🛎️', 'Each night, choose a master: you may only vote if they are voting too.'],
-  drunk: ['Drunk', 'outsider', '🍺', 'You do not know you are the Drunk. You think you are a Townsfolk, but you are not.'],
-  recluse: ['Recluse', 'outsider', '🦹', 'You might register as evil & as a Minion or Demon, even if dead.'],
-  saint: ['Saint', 'outsider', '😇', 'If you die by execution, your team loses.'],
-  poisoner: ['Poisoner', 'minion', '🧪', 'Each night, choose a player: they are poisoned tonight and tomorrow day.'],
-  spy: ['Spy', 'minion', '🕵️', 'Each night, you see the Grimoire. You might register as good & as a Townsfolk or Outsider, even if dead.'],
-  scarletwoman: ['Scarlet Woman', 'minion', '💃', 'If there are 5 or more players alive & the Demon dies, you become the Demon.'],
-  baron: ['Baron', 'minion', '🎩', 'There are extra Outsiders in play. [+2 Outsiders]'],
-  imp: ['Imp', 'demon', '😈', 'Each night*, choose a player: they die. If you kill yourself this way, a Minion becomes the Imp.'],
-};
+import ScriptSelectorModal from './components/ScriptSelectorModal';
+import GameStateModal from './components/GameStateModal';
+import { resolveRoleInfo } from './data/roles';
+import { SCRIPT_PRESETS } from './data/scripts';
 
 const TEAM_STYLES = {
   townsfolk: { label: 'Townsfolk', border: 'border-blue-500', bg: 'bg-blue-950/60', text: 'text-blue-300', badge: 'bg-blue-600' },
@@ -38,35 +16,25 @@ const TEAM_STYLES = {
   unknown: { label: 'Custom / Other', border: 'border-zinc-500', bg: 'bg-zinc-900', text: 'text-zinc-300', badge: 'bg-zinc-600' },
 };
 
-const getRoleInfo = (id) => {
-  if (!id) return null;
-  const cleanId = String(id).toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (ROLES_DB[cleanId]) {
+const getRoleInfo = (id) => resolveRoleInfo(id);
+
+function sanitizeSeats(rawSeats, count) {
+  const targetLen = typeof count === 'number' && count > 0 ? count : (Array.isArray(rawSeats) ? rawSeats.length : 8);
+  const safeList = Array.isArray(rawSeats) ? rawSeats : [];
+  return Array.from({ length: targetLen }, (_, i) => {
+    const s = safeList[i];
     return {
-      id: cleanId,
-      name: ROLES_DB[cleanId][0],
-      team: ROLES_DB[cleanId][1],
-      icon: ROLES_DB[cleanId][2] || '✦',
-      ability: ROLES_DB[cleanId][3] || '',
+      seat: i + 1,
+      name: typeof s?.name === 'string' ? s.name : '',
+      drawnToken: s?.drawnToken || null,
+      isDrunk: Boolean(s?.isDrunk),
+      isTraveller: Boolean(s?.isTraveller),
+      travellerAlignment: s?.travellerAlignment === 'evil' ? 'evil' : 'good',
+      reminders: Array.isArray(s?.reminders) ? s.reminders.filter(Boolean) : [],
+      isDead: Boolean(s?.isDead),
     };
-  }
-  if (TRAVELLERS_DB[cleanId]) {
-    return {
-      id: cleanId,
-      name: TRAVELLERS_DB[cleanId].name,
-      team: 'traveller',
-      icon: TRAVELLERS_DB[cleanId].icon,
-      ability: TRAVELLERS_DB[cleanId].ability,
-    };
-  }
-  return {
-    id: cleanId,
-    name: String(id).replace(/_/g, ' '),
-    team: 'unknown',
-    icon: '✦',
-    ability: '',
-  };
-};
+  });
+}
 
 function useLocalStorage(key, defaultValue) {
   const [value, setValue] = useState(() => {
@@ -95,30 +63,31 @@ function useLocalStorage(key, defaultValue) {
 export default function App() {
   const [activeTab, setActiveTab] = useLocalStorage('botc_active_tab', 'bag');
   const [playerCount, setPlayerCount] = useLocalStorage('botc_player_count', 8);
-  const [scriptName] = useLocalStorage('botc_script_name', 'Trouble Brewing');
-  const [scriptRoles] = useLocalStorage('botc_script_roles', Object.keys(ROLES_DB));
+  const [scriptName, setScriptName] = useLocalStorage('botc_script_name', 'Trouble Brewing');
+  const [scriptRoles, setScriptRoles] = useLocalStorage('botc_script_roles', SCRIPT_PRESETS.trouble_brewing.roles);
   const [bagRoles, setBagRoles] = useLocalStorage('botc_bag_roles', []);
   const [drunkDisguise, setDrunkDisguise] = useLocalStorage('botc_drunk_disguise', '');
   const [seats, setSeats] = useLocalStorage('botc_seats', []);
   const [fullscreenCard, setFullscreenCard] = useState(null);
 
-  // Initialize or synchronize seats if table is empty
+  // Modals
+  const [showScriptModal, setShowScriptModal] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+
+  // Initialize or sanitize seats on load or count change
   useEffect(() => {
-    if (seats.length === 0 && playerCount > 0) {
-      setSeats(
-        Array.from({ length: playerCount }, (_, i) => ({
-          seat: i + 1,
-          name: '',
-          drawnToken: null,
-          isDrunk: false,
-          isTraveller: false,
-          travellerAlignment: 'good',
-          reminders: [],
-          isDead: false,
-        }))
-      );
-    }
-  }, [playerCount, seats.length, setSeats]);
+    setSeats((prev) => {
+      if (!Array.isArray(prev) || prev.length === 0) {
+        return sanitizeSeats([], playerCount);
+      }
+      // Migrate missing fields on existing seats
+      const hasMissingFields = prev.some((s) => typeof s.isDrunk !== 'boolean' || !Array.isArray(s.reminders));
+      if (hasMissingFields) {
+        return sanitizeSeats(prev, prev.length);
+      }
+      return prev;
+    });
+  }, [playerCount, setSeats]);
 
   const toggleRoleInBag = (roleId) => {
     setBagRoles((prev) => {
@@ -134,7 +103,7 @@ export default function App() {
   const isDrunkInBag = bagRoles.includes('drunk');
 
   const availableTownsfolkForDrunk = useMemo(
-    () => scriptRoles.map(getRoleInfo).filter((r) => r.team === 'townsfolk' && !bagRoles.includes(r.id)),
+    () => scriptRoles.map(getRoleInfo).filter((r) => r && r.team === 'townsfolk' && !bagRoles.includes(r.id)),
     [scriptRoles, bagRoles]
   );
 
@@ -143,29 +112,39 @@ export default function App() {
     [bagRoles, drunkDisguise]
   );
 
+  // Non-sticky token assignment
   const handleAssignToken = (idx, token) => {
     setSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
-        const isDrunkDisguise = drunkDisguise && token === drunkDisguise;
+        const isDrunkToken = Boolean(drunkDisguise && token === drunkDisguise);
         return {
           ...s,
           drawnToken: token,
-          isDrunk: s.isDrunk || isDrunkDisguise,
+          isDrunk: isDrunkToken,
         };
       })
     );
   };
 
+  // Safe Drunk toggle without hardcoded fallback
   const handleToggleDrunk = (idx) => {
     setSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
         const willBeDrunk = !s.isDrunk;
+        if (!willBeDrunk) {
+          return { ...s, isDrunk: false };
+        }
+        let disguise = s.drawnToken;
+        const currentRole = disguise ? getRoleInfo(disguise) : null;
+        if (!currentRole || currentRole.team !== 'townsfolk') {
+          disguise = availableTownsfolkForDrunk[0]?.id || null;
+        }
         return {
           ...s,
-          isDrunk: willBeDrunk,
-          drawnToken: s.drawnToken || (availableTownsfolkForDrunk[0]?.id || 'monk'),
+          isDrunk: true,
+          drawnToken: disguise,
         };
       })
     );
@@ -259,7 +238,11 @@ export default function App() {
     const g = { townsfolk: [], outsider: [], minion: [], demon: [], unknown: [] };
     scriptRoles.forEach((id) => {
       const info = getRoleInfo(id);
-      g[info.team].push(info);
+      if (info && g[info.team]) {
+        g[info.team].push(info);
+      } else if (info) {
+        g.unknown.push(info);
+      }
     });
     return g;
   }, [scriptRoles]);
@@ -293,22 +276,39 @@ export default function App() {
   };
 
   const handleResetGame = () => {
-    if (window.confirm('Reset current game? This will clear all seats and selected bag roles.')) {
-      setBagRoles([]);
-      setDrunkDisguise('');
-      setSeats(
-        Array.from({ length: playerCount }, (_, i) => ({
-          seat: i + 1,
-          name: '',
-          drawnToken: null,
-          isDrunk: false,
-          isTraveller: false,
-          travellerAlignment: 'good',
-          reminders: [],
-          isDead: false,
-        }))
-      );
-      setActiveTab('bag');
+    setBagRoles([]);
+    setDrunkDisguise('');
+    setSeats(sanitizeSeats([], playerCount));
+    setActiveTab('bag');
+  };
+
+  const handleSelectScript = (name, roles) => {
+    setScriptName(name);
+    setScriptRoles(roles);
+    setBagRoles([]);
+    setDrunkDisguise('');
+  };
+
+  const getGameStateSnapshot = () => ({
+    schemaVersion: 2,
+    timestamp: new Date().toISOString(),
+    scriptName,
+    scriptRoles,
+    playerCount,
+    bagRoles,
+    drunkDisguise,
+    seats,
+  });
+
+  const handleImportGameState = (json) => {
+    if (!json || typeof json !== 'object') throw new Error('Invalid game state');
+    if (json.scriptName) setScriptName(json.scriptName);
+    if (Array.isArray(json.scriptRoles)) setScriptRoles(json.scriptRoles);
+    if (typeof json.playerCount === 'number') setPlayerCount(json.playerCount);
+    if (Array.isArray(json.bagRoles)) setBagRoles(json.bagRoles);
+    if (typeof json.drunkDisguise === 'string') setDrunkDisguise(json.drunkDisguise);
+    if (Array.isArray(json.seats)) {
+      setSeats(sanitizeSeats(json.seats, json.playerCount || json.seats.length));
     }
   };
 
@@ -316,26 +316,58 @@ export default function App() {
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans select-none flex flex-col">
       <FullscreenFlashcard card={fullscreenCard} onClose={() => setFullscreenCard(null)} />
 
-      {/* Sticky Header (No Load JSON) */}
-      <header className="sticky top-0 z-30 bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex items-center justify-between shadow-md">
+      {/* Script Selector Modal */}
+      {showScriptModal && (
+        <ScriptSelectorModal
+          currentScriptName={scriptName}
+          onSelectScript={handleSelectScript}
+          onClose={() => setShowScriptModal(false)}
+        />
+      )}
+
+      {/* Game State & Session Backup Modal */}
+      {showBackupModal && (
+        <GameStateModal
+          getGameState={getGameStateSnapshot}
+          onImportState={handleImportGameState}
+          onResetGame={handleResetGame}
+          onClose={() => setShowBackupModal(false)}
+        />
+      )}
+
+      {/* Sticky Header with Script & Backup Controls */}
+      <header className="sticky top-0 z-30 bg-zinc-900 border-b border-zinc-800 px-4 py-2.5 flex items-center justify-between shadow-md pt-[max(0.625rem,env(safe-area-inset-top))]">
         <div>
-          <h1 className="text-base font-bold text-amber-400">BotC Pocket Grimoire</h1>
-          <p className="text-xs text-zinc-400">Script: <b className="text-zinc-200">{scriptName}</b></p>
+          <h1 className="text-sm sm:text-base font-bold text-amber-400 leading-tight">
+            BotC Pocket Grimoire
+          </h1>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[11px] text-zinc-400">Script:</span>
+            <button
+              onClick={() => setShowScriptModal(true)}
+              title="Change edition or load custom script"
+              className="inline-flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold px-2 py-0.5 rounded border border-zinc-700 hover:border-amber-500/50 transition-colors"
+            >
+              <span>{scriptName}</span>
+              <span className="text-[9px] text-amber-400">▾</span>
+            </button>
+          </div>
         </div>
+
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
-            onClick={handleResetGame}
-            title="Reset current game and start fresh"
-            className="text-xs text-zinc-400 hover:text-rose-400 border border-zinc-700 hover:border-rose-900/60 bg-zinc-800 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+            onClick={() => setShowBackupModal(true)}
+            title="Backup, export, import or reset session"
+            className="text-xs text-zinc-300 hover:text-zinc-100 border border-zinc-700 hover:border-zinc-600 bg-zinc-800 hover:bg-zinc-750 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
           >
-            <span>↺</span>
-            <span className="hidden sm:inline">Reset Game</span>
+            <span>💾</span>
+            <span className="hidden sm:inline">Backup & Reset</span>
           </button>
         </div>
       </header>
 
-      {/* Tabs Navigation (No bottom bar!) */}
-      <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-800 text-xs sm:text-sm font-semibold sticky top-[57px] z-20">
+      {/* Tabs Navigation */}
+      <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-800 text-xs sm:text-sm font-semibold sticky top-[53px] z-20">
         <button
           onClick={() => setActiveTab('bag')}
           className={`py-3 border-b-2 transition-all ${
@@ -402,7 +434,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* Good vs Evil Formula & Interactive Role Slots (Official BotC Rules) */}
+          {/* Step 2: Good vs Evil Formula & Interactive Role Slots */}
           <RoleBalanceTracker
             playerCount={playerCount}
             bagRoles={bagRoles}
@@ -435,7 +467,7 @@ export default function App() {
           {/* Role Grid by Team */}
           {Object.entries(groupedScript).map(([teamKey, roles]) => {
             if (!roles.length) return null;
-            const st = TEAM_STYLES[teamKey];
+            const st = TEAM_STYLES[teamKey] || TEAM_STYLES.unknown;
             return (
               <section key={teamKey} className="space-y-2">
                 <h2 className={`text-xs font-bold uppercase ${st.text}`}>{st.label}</h2>
@@ -506,6 +538,7 @@ export default function App() {
         <NightFlashcards
           scriptRoles={scriptRoles}
           bagRoles={bagRoles}
+          drunkDisguise={drunkDisguise}
           getRoleInfo={getRoleInfo}
           onShowCard={(card) => setFullscreenCard(card)}
         />

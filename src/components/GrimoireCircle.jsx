@@ -86,7 +86,7 @@ export default function GrimoireCircle({
   // Calculate role info for selected seat
   const selectedSeatInfo = useMemo(() => {
     if (!selectedSeat) return null;
-    const isDrunk = Boolean(selectedSeat.isDrunk || (drunkDisguise && selectedSeat.drawnToken === drunkDisguise));
+    const isDrunk = Boolean(selectedSeat.isDrunk);
     const isTraveller = Boolean(selectedSeat.isTraveller);
 
     let actualRole = null;
@@ -94,8 +94,8 @@ export default function GrimoireCircle({
 
     if (isDrunk) {
       actualRole = getRoleInfo('drunk');
-      const disguiseId = selectedSeat.drawnToken || drunkDisguise || 'monk';
-      shownRole = getRoleInfo(disguiseId) || getRoleInfo('monk');
+      const disguiseId = selectedSeat.drawnToken || drunkDisguise || (availableTownsfolk[0]?.id || null);
+      shownRole = disguiseId ? getRoleInfo(disguiseId) : null;
     } else if (isTraveller) {
       actualRole = getRoleInfo(selectedSeat.drawnToken || 'gunslinger');
       shownRole = actualRole;
@@ -105,14 +105,15 @@ export default function GrimoireCircle({
     }
 
     return { isDrunk, isTraveller, actualRole, shownRole };
-  }, [selectedSeat, drunkDisguise, getRoleInfo]);
+  }, [selectedSeat, drunkDisguise, availableTownsfolk, getRoleInfo]);
 
   // Show to Player action — strictly protects Drunk secrecy
   const handleShowToPlayer = () => {
     if (!selectedSeat || !selectedSeatInfo) return;
 
     if (selectedSeatInfo.isDrunk) {
-      const disguise = selectedSeatInfo.shownRole || getRoleInfo('monk');
+      const disguise = selectedSeatInfo.shownRole || (availableTownsfolk[0] ? getRoleInfo(availableTownsfolk[0].id) : null);
+      if (!disguise) return;
       onShowToPlayer({
         title: disguise.name,
         subtitle: selectedSeat.name ? `Seat #${selectedSeat.seat} • ${selectedSeat.name}` : `Seat #${selectedSeat.seat}`,
@@ -185,7 +186,7 @@ export default function GrimoireCircle({
           const pos = seatPositions[idx];
           if (!pos) return null;
 
-          const isDrunk = Boolean(s.isDrunk || (drunkDisguise && s.drawnToken === drunkDisguise));
+          const isDrunk = Boolean(s.isDrunk);
           const isTraveller = Boolean(s.isTraveller);
           const drawn = s.drawnToken ? getRoleInfo(s.drawnToken) : null;
           const actual = isDrunk ? getRoleInfo('drunk') : drawn;

@@ -89,6 +89,7 @@ export function FullscreenFlashcard({ card, onClose }) {
 export default function NightFlashcards({
   scriptRoles,
   bagRoles,
+  drunkDisguise,
   getRoleInfo,
   onShowCard,
 }) {
@@ -104,7 +105,10 @@ export default function NightFlashcards({
     });
   };
 
-  const rolesToDisplay = bagRoles.length > 0 ? bagRoles : scriptRoles;
+  // Anti-leak: Replace Drunk with its Townsfolk disguise so Drunk role is never revealed to players at night
+  const rolesToDisplay = (bagRoles.length > 0 ? bagRoles : scriptRoles)
+    .map((id) => (id === 'drunk' ? drunkDisguise || null : id))
+    .filter(Boolean);
 
   return (
     <main className="p-4 space-y-6 max-w-lg mx-auto pb-28">

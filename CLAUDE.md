@@ -4,7 +4,7 @@ Instructions for AI agents working in this repo.
 
 ## Project
 
-An offline mobile assistant for the Blood on the Clocktower Storyteller. Start with [docs/vision.md](docs/vision.md).
+An offline web & mobile PWA assistant for the Blood on the Clocktower Storyteller. Start with [docs/vision.md](docs/vision.md).
 
 ## Core principle: assist, never enforce
 
@@ -18,7 +18,10 @@ The app MUST NOT stop the Storyteller from doing something, or force them to do 
 - Use the terms in [docs/glossary.md](docs/glossary.md) exactly. Add any new terms there.
 - Before changing or adding a decision, check with the product owner. Don't record assumptions as accepted.
 
-## Code
+## Code & Architecture
 
-- The app lives in `app/` (Expo, TypeScript). See [ADR 0002](docs/decisions/0002-app-framework.md).
-- Character and script data lives in `data/`. See [ADR 0003](docs/decisions/0003-character-data-source.md).
+- **Stack:** React 19, Vite 8, Tailwind CSS v4, PWA Service Worker via `vite-plugin-pwa`. See [ADR 0008](docs/decisions/0008-pwa-web-architecture.md).
+- The web app lives in `src/`.
+- Character database and script presets live in `src/data/` (`roles.js`, `scripts.js`, `travellers.js`).
+- State persistence is zero-account, client-side in `localStorage` with versioned schema migration.
+- Code quality is enforced by `oxlint` (0 warnings, 0 errors).
