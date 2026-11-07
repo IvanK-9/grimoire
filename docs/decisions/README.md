@@ -18,6 +18,7 @@ One decision per file: `NNNN-short-name.md`. See [ADR 0001](0001-record-decision
 | [0008](0008-pwa-web-architecture.md) | PWA Web Architecture with React 19, Vite, and Offline Service Worker | Accepted |
 | [0009](0009-ghost-votes-and-undo-history.md) | Ghost Vote Tracker and Non-Destructive Undo History | Accepted |
 | [0010](0010-canonical-reminders-and-all-travellers.md) | Canonical Role Reminders for Storyteller and Spy, and Cross-Script Travellers | Accepted |
+| [0011](0011-digital-deal-and-offscript-roles.md) | Digital Deal Randomiser and Off-Script Character Assignments | Accepted |
 
 ## Template
 

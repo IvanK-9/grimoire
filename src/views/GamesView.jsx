@@ -29,6 +29,7 @@ export default function GamesView({
   onUndo,
   canUndo = false,
   undoCount = 0,
+  onDigitalDeal,
   onToggleDrunk,
   onToggleTraveller,
   onSetTravellerRole,
@@ -316,6 +317,32 @@ export default function GamesView({
                 onSelectTeam={handleSelectTeam}
               />
 
+              {/* Quick Digital Deal Action Banner */}
+              {bagRoles.length > 0 && onDigitalDeal && (
+                <div className="bg-amber-950/30 border border-amber-500/40 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-md">
+                  <div>
+                    <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <span>🎲</span>
+                      <span>Digital Deal Ready ({bagRoles.length} roles in bag)</span>
+                    </div>
+                    <div className="text-[10px] text-zinc-400 mt-0.5">
+                      Randomly deal characters to all seats in 1 tap without physical bag tokens.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDigitalDeal();
+                      setCurrentLiveTab('circle');
+                    }}
+                    className="shrink-0 bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold px-3 py-2 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    <span>Deal to Table</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              )}
+
               {/* Script Roles Grid */}
               {Object.entries(groupedScript).map(([teamKey, roles]) => {
                 if (!roles.length) return null;
@@ -418,15 +445,28 @@ export default function GamesView({
                         Bag Seating: <strong className="text-amber-400">{usedTokens.length}</strong> of {physicalTokensInBag.length} seated
                       </span>
                     </div>
-                    {unassignedTokens.length === 0 ? (
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/40">
-                        ✓ All bag tokens seated
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
-                        {unassignedTokens.length} unassigned
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {unassignedTokens.length === 0 ? (
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                          ✓ All seated
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                          {unassignedTokens.length} unassigned
+                        </span>
+                      )}
+                      {unassignedTokens.length > 0 && onDigitalDeal && (
+                        <button
+                          type="button"
+                          onClick={onDigitalDeal}
+                          className="text-[10px] font-bold bg-amber-500 hover:bg-amber-400 text-zinc-950 px-2 py-0.5 rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                          title="Randomly deal bag characters across empty seats"
+                        >
+                          <span>🎲</span>
+                          <span>Deal</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {unassignedTokens.length > 0 && (

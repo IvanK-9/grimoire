@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { getScriptTravellers, getAllTravellers } from '../data/travellers';
 import { ROLE_REMINDERS_DB, getAvailableReminders, resolveReminderInfo } from '../data/reminders';
+import { getAllRoles } from '../data/roles';
 
 export default function GrimoireCircle({
   seats,
@@ -31,6 +32,9 @@ export default function GrimoireCircle({
   const [travellerFilter, setTravellerFilter] = useState('script'); // 'script' | 'all'
   const [reminderTab, setReminderTab] = useState('in_play'); // 'in_play' | 'all'
   const [customReminderInput, setCustomReminderInput] = useState('');
+  const [roleSourceTab, setRoleSourceTab] = useState('bag'); // 'bag' | 'offscript'
+  const [offScriptSearch, setOffScriptSearch] = useState('');
+  const [offScriptTeam, setOffScriptTeam] = useState('all'); // 'all' | 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'experimental'
 
   const seatCount = seats.length;
 
@@ -140,6 +144,28 @@ export default function GrimoireCircle({
     const list = getScriptTravellers(scriptName);
     return list.length > 0 ? list : getAllTravellers();
   }, [travellerFilter, scriptName]);
+
+  // All roles in database for off-script assignments (Pit-Hag, Barber, Alchemist, Sushi buffet)
+  const allAvailableRoles = useMemo(() => getAllRoles(), []);
+
+  const filteredOffScriptRoles = useMemo(() => {
+    const q = offScriptSearch.trim().toLowerCase();
+    return allAvailableRoles.filter((r) => {
+      if (!r) return false;
+      if (offScriptTeam === 'experimental') {
+        if (r.edition !== 'experimental') return false;
+      } else if (offScriptTeam !== 'all') {
+        if (r.team !== offScriptTeam) return false;
+      }
+      if (q) {
+        const matchName = r.name?.toLowerCase().includes(q);
+        const matchAbility = r.ability?.toLowerCase().includes(q);
+        const matchId = r.id?.toLowerCase().includes(q);
+        return Boolean(matchName || matchAbility || matchId);
+      }
+      return true;
+    });
+  }, [allAvailableRoles, offScriptTeam, offScriptSearch]);
 
   // Show to Player action — strictly protects Drunk secrecy
   const handleShowToPlayer = () => {
@@ -914,40 +940,162 @@ export default function GrimoireCircle({
               </div>
             )}
 
-            {/* Content for REGULAR TOKENS FROM BAG */}
+            {/* Content for ASSIGNING ROLE (Bag or Off-Script) */}
             {pickerMode === 'bag' && (
-              <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-                {physicalTokensInBag.map((tid) => {
-                  const info = getRoleInfo(tid);
-                  const taken = seats.find((x) => x.drawnToken === tid);
-                  const isCurrent = seats[selectedSeatIdx].drawnToken === tid;
-
-                  return (
+              <div className="space-y-2.5">
+                {/* Source Tabs: From Bag vs Off-Script */}
+                <div className="flex items-center justify-between gap-1 pb-1 border-b border-zinc-800 text-xs">
+                  <div className="text-[11px] text-zinc-400 font-medium">Role Source:</div>
+                  <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
                     <button
-                      key={tid}
-                      disabled={taken && !isCurrent}
-                      onClick={() => {
-                        onAssignToken(selectedSeatIdx, tid);
-                        setShowTokenPicker(false);
-                      }}
-                      className={`p-2.5 rounded-xl border text-left text-xs transition-colors ${
-                        isCurrent
-                          ? 'border-amber-400 bg-amber-500/20'
-                          : taken
-                          ? 'opacity-40 bg-zinc-950 border-zinc-800 cursor-not-allowed'
-                          : 'bg-zinc-800 hover:bg-zinc-750 border-zinc-700'
+                      type="button"
+                      onClick={() => setRoleSourceTab('bag')}
+                      className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        roleSourceTab === 'bag'
+                          ? 'bg-amber-500 text-zinc-950 shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-200'
                       }`}
                     >
-                      <div className="font-bold text-sm flex items-center gap-1.5 text-zinc-100">
-                        <span>{info.icon}</span>
-                        <span className="truncate">{info.name}</span>
-                      </div>
-                      <div className="text-[10px] text-zinc-400 mt-0.5">
-                        {taken ? `Seat #${taken.seat}` : 'In bag'}
-                      </div>
+                      🎒 Bag ({physicalTokensInBag.length})
                     </button>
-                  );
-                })}
+                    <button
+                      type="button"
+                      onClick={() => setRoleSourceTab('offscript')}
+                      className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        roleSourceTab === 'offscript'
+                          ? 'bg-amber-500 text-zinc-950 shadow-sm'
+                          : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      🌐 Off-Script ({allAvailableRoles.length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-view A: Bag Tokens */}
+                {roleSourceTab === 'bag' && (
+                  <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-0.5">
+                    {physicalTokensInBag.length === 0 ? (
+                      <div className="col-span-2 py-6 text-center text-xs text-zinc-500 italic">
+                        No tokens in bag. Switch to Off-Script or add roles in Bag tab.
+                      </div>
+                    ) : (
+                      physicalTokensInBag.map((tid) => {
+                        const info = getRoleInfo(tid);
+                        const taken = seats.find((x) => x.drawnToken === tid);
+                        const isCurrent = seats[selectedSeatIdx].drawnToken === tid;
+
+                        return (
+                          <button
+                            key={tid}
+                            disabled={taken && !isCurrent}
+                            onClick={() => {
+                              onAssignToken(selectedSeatIdx, tid);
+                              setShowTokenPicker(false);
+                            }}
+                            className={`p-2.5 rounded-xl border text-left text-xs transition-colors ${
+                              isCurrent
+                                ? 'border-amber-400 bg-amber-500/20'
+                                : taken
+                                ? 'opacity-40 bg-zinc-950 border-zinc-800 cursor-not-allowed'
+                                : 'bg-zinc-800 hover:bg-zinc-750 border-zinc-700'
+                            }`}
+                          >
+                            <div className="font-bold text-sm flex items-center gap-1.5 text-zinc-100">
+                              <span>{info.icon}</span>
+                              <span className="truncate">{info.name}</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-400 mt-0.5">
+                              {taken ? `Seat #${taken.seat}` : 'In bag'}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+
+                {/* Sub-view B: Off-Script Roles Browser */}
+                {roleSourceTab === 'offscript' && (
+                  <div className="space-y-2">
+                    {/* Search & Team Filter */}
+                    <div className="space-y-1.5">
+                      <input
+                        type="text"
+                        placeholder="Search any character (e.g. Barber, Pit-Hag)..."
+                        value={offScriptSearch}
+                        onChange={(e) => setOffScriptSearch(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-500/60"
+                      />
+                      <div className="flex flex-wrap gap-1 text-[10px]">
+                        {[
+                          { id: 'all', label: 'All' },
+                          { id: 'townsfolk', label: 'Townsfolk' },
+                          { id: 'outsider', label: 'Outsiders' },
+                          { id: 'minion', label: 'Minions' },
+                          { id: 'demon', label: 'Demons' },
+                          { id: 'experimental', label: 'Exp' },
+                        ].map((tf) => (
+                          <button
+                            key={tf.id}
+                            type="button"
+                            onClick={() => setOffScriptTeam(tf.id)}
+                            className={`px-2 py-0.5 rounded font-bold border transition-colors ${
+                              offScriptTeam === tf.id
+                                ? 'bg-amber-500/25 border-amber-500/80 text-amber-200'
+                                : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            {tf.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Roles Grid */}
+                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-0.5">
+                      {filteredOffScriptRoles.length === 0 ? (
+                        <div className="col-span-2 py-6 text-center text-xs text-zinc-500 italic">
+                          No matching characters found.
+                        </div>
+                      ) : (
+                        filteredOffScriptRoles.map((r) => {
+                          const isCurrent = seats[selectedSeatIdx].drawnToken === r.id;
+                          const st = TEAM_STYLES[r.team] || TEAM_STYLES.unknown;
+                          return (
+                            <button
+                              key={r.id}
+                              onClick={() => {
+                                onAssignToken(selectedSeatIdx, r.id);
+                                setShowTokenPicker(false);
+                              }}
+                              className={`p-2 rounded-xl border text-left text-xs transition-colors flex flex-col justify-between ${
+                                isCurrent
+                                  ? 'border-amber-400 bg-amber-500/20'
+                                  : 'bg-zinc-800 hover:bg-zinc-750 border-zinc-700'
+                              }`}
+                            >
+                              <div>
+                                <div className="font-bold text-xs flex items-center justify-between gap-1 text-zinc-100">
+                                  <span className="flex items-center gap-1.5 truncate">
+                                    <span>{r.icon}</span>
+                                    <span className="truncate">{r.name}</span>
+                                  </span>
+                                  <span className={`text-[8px] uppercase font-bold px-1 py-0.2 rounded border ${st.badge}`}>
+                                    {r.edition?.toUpperCase() || 'CUSTOM'}
+                                  </span>
+                                </div>
+                                <div className="text-[9px] text-zinc-400 mt-0.5 line-clamp-2 leading-tight">
+                                  {r.ability}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

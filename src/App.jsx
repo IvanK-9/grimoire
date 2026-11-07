@@ -306,6 +306,65 @@ export default function App() {
     updateSeats((prev) => prev.filter((_, i) => i !== idx).map((s, i) => ({ ...s, seat: i + 1 })));
   };
 
+  const handleDigitalDeal = () => {
+    if (bagRoles.length === 0) return;
+
+    // 1. Shuffle bag roles (Fisher-Yates)
+    const shuffled = [...bagRoles];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // 2. Resolve Drunk disguise if Drunk is in the bag but no disguise was picked yet
+    let activeDisguise = drunkDisguise;
+    if (shuffled.includes('drunk') && !activeDisguise) {
+      if (availableTownsfolkForDrunk.length > 0) {
+        activeDisguise = availableTownsfolkForDrunk[0].id;
+        setDrunkDisguise(activeDisguise);
+      }
+    }
+
+    // 3. Update seats with randomized roles
+    updateSeats((prev) => {
+      const travellers = prev.filter((s) => s.isTraveller);
+      const nonTravellers = prev.filter((s) => !s.isTraveller);
+      const targetCount = shuffled.length;
+      const newNonTravellers = [];
+
+      for (let i = 0; i < targetCount; i++) {
+        const existing = nonTravellers[i];
+        const role = shuffled[i];
+        const isDrunk = role === 'drunk';
+        const token = isDrunk ? (activeDisguise || 'drunk') : role;
+
+        newNonTravellers.push({
+          seat: i + 1,
+          name: existing?.name || '',
+          drawnToken: token,
+          isDrunk,
+          isTraveller: false,
+          travellerAlignment: 'good',
+          reminders: [],
+          isDead: false,
+          hasGhostVote: true,
+        });
+      }
+
+      // Re-number travellers after non-travellers
+      const renumberedTravellers = travellers.map((t, idx) => ({
+        ...t,
+        seat: targetCount + idx + 1,
+      }));
+
+      return [...newNonTravellers, ...renumberedTravellers];
+    });
+
+    if (playerCount !== shuffled.length) {
+      setPlayerCount(shuffled.length);
+    }
+  };
+
   const groupedScript = useMemo(() => {
     const g = { townsfolk: [], outsider: [], minion: [], demon: [], unknown: [] };
     scriptRoles.forEach((id) => {
@@ -365,8 +424,7 @@ export default function App() {
   const handleSelectScript = (name, roles) => {
     setScriptName(name);
     setScriptRoles(roles);
-    setBagRoles([]);
-    setDrunkDisguise('');
+    // bagRoles and drunkDisguise are preserved so switching scripts does not wipe the active table (ADR-0011)
     setShowScriptModal(false);
   };
 
@@ -740,6 +798,7 @@ export default function App() {
           onUndo={handleUndo}
           canUndo={undoStack.length > 0}
           undoCount={undoStack.length}
+          onDigitalDeal={handleDigitalDeal}
           onToggleDrunk={handleToggleDrunk}
           onToggleTraveller={handleToggleTraveller}
           onSetTravellerRole={handleSetTravellerRole}
