@@ -4,11 +4,13 @@ import HomeView from './views/HomeView';
 import CompendiumView from './views/CompendiumView';
 import ScriptsView from './views/ScriptsView';
 import GamesView from './views/GamesView';
+import MessagesView from './views/MessagesView';
 import ScriptSelectorModal from './components/ScriptSelectorModal';
 import GameStateModal from './components/GameStateModal';
 import { FullscreenFlashcard } from './components/NightFlashcards';
 import { resolveRoleInfo } from './data/roles';
 import { SCRIPT_PRESETS } from './data/scripts';
+import { DEFAULT_FAVORITE_IDS } from './data/messages';
 
 const TEAM_STYLES = {
   townsfolk: { label: 'Townsfolk', border: 'border-blue-500', bg: 'bg-blue-950/60', text: 'text-blue-300', badge: 'bg-blue-600' },
@@ -80,6 +82,8 @@ export default function App() {
   // App-Wide Persistent Collections
   const [gameHistory, setGameHistory] = useLocalStorage('botc_game_history', []);
   const [customScripts, setCustomScripts] = useLocalStorage('botc_custom_scripts', []);
+  const [favoriteMessageIds, setFavoriteMessageIds] = useLocalStorage('botc_favorite_messages', DEFAULT_FAVORITE_IDS);
+  const [customMessages, setCustomMessages] = useLocalStorage('botc_custom_messages', []);
 
   // Modals
   const [showScriptModal, setShowScriptModal] = useState(false);
@@ -347,6 +351,21 @@ export default function App() {
     setGameHistory([]);
   };
 
+  const handleToggleFavoriteMessage = (msgId) => {
+    setFavoriteMessageIds((prev) =>
+      prev.includes(msgId) ? prev.filter((id) => id !== msgId) : [...prev, msgId]
+    );
+  };
+
+  const handleCreateCustomMessage = (newMsg) => {
+    setCustomMessages((prev) => [newMsg, ...(Array.isArray(prev) ? prev : [])]);
+  };
+
+  const handleDeleteCustomMessage = (msgId) => {
+    setCustomMessages((prev) => (Array.isArray(prev) ? prev.filter((m) => m.id !== msgId) : []));
+    setFavoriteMessageIds((prev) => (Array.isArray(prev) ? prev.filter((id) => id !== msgId) : []));
+  };
+
   const getGameStateSnapshot = () => ({
     schemaVersion: 2,
     timestamp: new Date().toISOString(),
@@ -516,11 +535,23 @@ export default function App() {
           handleRemoveSeat={handleRemoveSeat}
           onShowToPlayer={(card) => setFullscreenCard(card)}
           onOpenScriptModal={() => setShowScriptModal(true)}
+          onOpenMessages={() => setActiveMainView('messages')}
           gameHistory={gameHistory}
           onFinishGame={handleFinishGame}
           onDeleteHistoryItem={handleDeleteHistoryItem}
           onClearHistory={handleClearHistory}
           initialSubTab={gamesInitialSubTab}
+        />
+      )}
+
+      {/* SECTION 5: MESSAGES & BIG TEXT */}
+      {activeMainView === 'messages' && (
+        <MessagesView
+          favoriteMessageIds={favoriteMessageIds}
+          onToggleFavorite={handleToggleFavoriteMessage}
+          customMessages={customMessages}
+          onCreateCustomMessage={handleCreateCustomMessage}
+          onDeleteCustomMessage={handleDeleteCustomMessage}
         />
       )}
     </div>

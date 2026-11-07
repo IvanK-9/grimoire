@@ -32,6 +32,7 @@ export default function GamesView({
   handleRemoveSeat,
   onShowToPlayer,
   onOpenScriptModal,
+  onOpenMessages,
   // History State
   gameHistory = [],
   onFinishGame,
@@ -104,6 +105,16 @@ export default function GamesView({
 
         {activeSubSection === 'live' && (
           <div className="flex items-center gap-2">
+            {onOpenMessages && (
+              <button
+                onClick={onOpenMessages}
+                title="Open Big Text Communicator"
+                className="text-xs bg-zinc-800 hover:bg-zinc-750 text-amber-300 border border-zinc-700 font-semibold px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
+              >
+                <span>💬</span>
+                <span className="hidden sm:inline">Big Text</span>
+              </button>
+            )}
             <button
               onClick={onOpenScriptModal}
               title="Change Script"

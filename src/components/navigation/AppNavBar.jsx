@@ -12,7 +12,7 @@ export default function AppNavBar({ activeView, onSelectView, hasActiveGame = fa
       id: 'compendium',
       label: 'Compendium',
       icon: '📖',
-      desc: 'All Characters & Rules',
+      desc: 'Characters & Reference',
     },
     {
       id: 'scripts',
@@ -27,6 +27,12 @@ export default function AppNavBar({ activeView, onSelectView, hasActiveGame = fa
       desc: 'Active Grimoire & History',
       badge: hasActiveGame ? (activePlayerCount ? `${activePlayerCount}p` : 'LIVE') : null,
     },
+    {
+      id: 'messages',
+      label: 'Messages',
+      icon: '💬',
+      desc: 'Big Text & Cues',
+    },
   ];
 
   return (
@@ -34,32 +40,34 @@ export default function AppNavBar({ activeView, onSelectView, hasActiveGame = fa
       {/* Mobile Bottom Navigation Bar (Fixed) */}
       <nav
         aria-label="Mobile Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/90 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl transition-all"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/90 px-1.5 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl transition-all"
       >
-        <div className="grid grid-cols-4 gap-1 max-w-md mx-auto">
+        <div className="grid grid-cols-5 gap-0.5 max-w-md mx-auto">
           {navItems.map((item) => {
             const isActive = activeView === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => onSelectView(item.id)}
-                className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all relative ${
+                className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition-all relative ${
                   isActive
                     ? 'text-amber-400 bg-amber-500/10 font-bold scale-[1.02]'
                     : 'text-zinc-400 hover:text-zinc-200 active:scale-95'
                 }`}
               >
-                <div className="relative text-lg leading-none mb-0.5">
+                <div className="relative text-base sm:text-lg leading-none mb-0.5">
                   <span>{item.icon}</span>
                   {item.badge && (
-                    <span className="absolute -top-1.5 -right-3 px-1 py-0.2 bg-red-600 text-white text-[9px] font-black rounded-full animate-pulse shadow-sm">
+                    <span className="absolute -top-1.5 -right-3 px-1 py-0.2 bg-red-600 text-white text-[8px] font-black rounded-full animate-pulse shadow-sm">
                       {item.badge}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] tracking-tight">{item.label}</span>
+                <span className="text-[9.5px] sm:text-[10px] tracking-tight truncate max-w-full">
+                  {item.label}
+                </span>
                 {isActive && (
-                  <span className="absolute bottom-0 w-6 h-0.5 bg-amber-400 rounded-full" />
+                  <span className="absolute bottom-0 w-5 h-0.5 bg-amber-400 rounded-full" />
                 )}
               </button>
             );
@@ -79,7 +87,7 @@ export default function AppNavBar({ activeView, onSelectView, hasActiveGame = fa
               <button
                 key={item.id}
                 onClick={() => onSelectView(item.id)}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all relative ${
                   isActive
                     ? 'bg-amber-500 text-zinc-950 font-bold shadow-md'
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850'

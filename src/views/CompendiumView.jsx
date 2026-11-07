@@ -10,7 +10,41 @@ const TEAM_LABELS = {
   traveller: { label: 'Travellers', icon: '🧳', badge: 'bg-purple-950/80 text-purple-300 border-purple-600/40' },
 };
 
+const GLOSSARY_RULES = [
+  {
+    term: 'Drunk & Poisoned (Droisoned)',
+    icon: '🍺',
+    desc: 'A drunk or poisoned player has NO ability, but believes they do. The Storyteller may give them false or true information at will. If an ability causes death, it fails.',
+  },
+  {
+    term: 'Madness',
+    icon: '🧠',
+    desc: 'A player who is "mad" about something is attempting to convince the group that it is true. If they break madness or are not sincere, the Storyteller may execute them or inflict the penalty.',
+  },
+  {
+    term: 'Dead Votes (Ghost Tokens)',
+    icon: '👻',
+    desc: 'Dead players may still participate in discussions freely. Each dead player has exactly ONE ghost vote token for the remainder of the game. Once spent, they cannot vote again.',
+  },
+  {
+    term: 'Travellers (Путники)',
+    icon: '🧳',
+    desc: 'Travellers arrive late or leave early. They do not count toward player count for Evil/Good ratio or majority execution math. They can be exiled by a simple majority vote without ending the day.',
+  },
+  {
+    term: 'Alive Neighbours',
+    icon: '👥',
+    desc: 'Dead players are skipped when checking "alive neighbours" (e.g. for Empath, Tea Lady, Chef, No Dashii). The circle closes over dead corpses.',
+  },
+  {
+    term: 'Night Order & First Night',
+    icon: '🌙',
+    desc: 'Minions and Demons learn each other on Night 1 (except in Sects & Violets or when Poppy Grower is in play). Demon kills occur from Night 2 onwards (asterisked abilities).',
+  },
+];
+
 export default function CompendiumView({ onShowRoleFullscreen }) {
+  const [activeSubTab, setActiveSubTab] = useState('characters'); // 'characters' | 'rules'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [selectedEdition, setSelectedEdition] = useState('all');
@@ -48,7 +82,7 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
           <div className="flex items-center gap-2">
             <span className="text-xl">📖</span>
             <h1 className="text-lg sm:text-xl font-black text-zinc-100 tracking-tight">
-              Compendium & Character Registry
+              Compendium Reference
             </h1>
           </div>
           <span className="text-xs font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-500/30">
@@ -56,182 +90,238 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
           </span>
         </div>
         <p className="text-xs text-zinc-400">
-          Official abilities, rulings, and Big Text fullscreen inspection for players.
+          Official character encyclopedia, rule clarifications, and Big Text inspection.
         </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">🔍</span>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by character or ability (e.g. poison, executed, neighbor)..."
-          className="w-full bg-zinc-900 border border-zinc-700/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-400 transition-colors"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-sm w-5 h-5 flex items-center justify-center rounded-full bg-zinc-800"
-          >
-            ✕
-          </button>
-        )}
+      {/* Sub-sections tabs */}
+      <div className="grid grid-cols-2 gap-1 bg-zinc-900 p-1 rounded-2xl border border-zinc-800 text-xs font-semibold max-w-sm">
+        <button
+          onClick={() => setActiveSubTab('characters')}
+          className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            activeSubTab === 'characters'
+              ? 'bg-amber-500 text-zinc-950 font-bold shadow-md'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <span>🃏</span>
+          <span>Characters</span>
+        </button>
+        <button
+          onClick={() => setActiveSubTab('rules')}
+          className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            activeSubTab === 'rules'
+              ? 'bg-amber-500 text-zinc-950 font-bold shadow-md'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          <span>📜</span>
+          <span>Rules & Glossary</span>
+        </button>
       </div>
 
-      {/* Team Filter Pills */}
-      <div className="space-y-1.5">
-        <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-          Filter by Team
-        </span>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {Object.entries(TEAM_LABELS).map(([k, v]) => {
-            const isSel = selectedTeam === k;
-            return (
+      {/* SUB-SECTION 1: CHARACTERS */}
+      {activeSubTab === 'characters' && (
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by character or ability (e.g. poison, executed, neighbor)..."
+              className="w-full bg-zinc-900 border border-zinc-700/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-400 transition-colors"
+            />
+            {searchQuery && (
               <button
-                key={k}
-                onClick={() => setSelectedTeam(k)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 border ${
-                  isSel
-                    ? 'bg-amber-500 text-zinc-950 font-bold border-amber-400 shadow-md'
-                    : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700'
-                }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-sm w-5 h-5 flex items-center justify-center rounded-full bg-zinc-800"
               >
-                <span>{v.icon}</span>
-                <span>{v.label}</span>
+                ✕
               </button>
-            );
-          })}
-        </div>
-      </div>
+            )}
+          </div>
 
-      {/* Edition Filter Pills */}
-      <div className="space-y-1.5">
-        <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-          Filter by Edition
-        </span>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {Object.entries(EDITIONS).map(([k, v]) => {
-            const isSel = selectedEdition === k;
-            return (
+          {/* Team Filter Pills */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+              Filter by Team
+            </span>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {Object.entries(TEAM_LABELS).map(([k, v]) => {
+                const isSel = selectedTeam === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setSelectedTeam(k)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 border ${
+                      isSel
+                        ? 'bg-amber-500 text-zinc-950 font-bold border-amber-400 shadow-md'
+                        : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    <span>{v.icon}</span>
+                    <span>{v.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Edition Filter Pills */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+              Filter by Edition
+            </span>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {Object.entries(EDITIONS).map(([k, v]) => {
+                const isSel = selectedEdition === k;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setSelectedEdition(k)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium shrink-0 transition-all border ${
+                      isSel
+                        ? 'bg-zinc-100 text-zinc-950 font-bold border-zinc-200 shadow-sm'
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <span>{v.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Active Filter Count Status */}
+          <div className="flex items-center justify-between text-xs text-zinc-400 px-1 pt-1">
+            <span>
+              Showing <strong className="text-zinc-200">{filteredRoles.length}</strong> of {allRoles.length} roles
+            </span>
+            {(searchQuery || selectedTeam !== 'all' || selectedEdition !== 'all') && (
               <button
-                key={k}
-                onClick={() => setSelectedEdition(k)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium shrink-0 transition-all border ${
-                  isSel
-                    ? 'bg-zinc-100 text-zinc-950 font-bold border-zinc-200 shadow-sm'
-                    : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
-                }`}
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedTeam('all');
+                  setSelectedEdition('all');
+                }}
+                className="text-amber-400 hover:underline text-[11px] font-semibold"
               >
-                <span>{v.label}</span>
+                Reset all filters
               </button>
-            );
-          })}
-        </div>
-      </div>
+            )}
+          </div>
 
-      {/* Active Filter Count Status */}
-      <div className="flex items-center justify-between text-xs text-zinc-400 px-1 pt-1">
-        <span>
-          Showing <strong className="text-zinc-200">{filteredRoles.length}</strong> of {allRoles.length} roles
-        </span>
-        {(searchQuery || selectedTeam !== 'all' || selectedEdition !== 'all') && (
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedTeam('all');
-              setSelectedEdition('all');
-            }}
-            className="text-amber-400 hover:underline text-[11px] font-semibold"
-          >
-            Reset all filters
-          </button>
-        )}
-      </div>
+          {/* Characters Grid */}
+          {filteredRoles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredRoles.map((role) => {
+                const teamStyle = TEAM_LABELS[role.team] || TEAM_LABELS.all;
+                const editionInfo = EDITIONS[role.edition] || { label: 'Custom' };
 
-      {/* Characters Grid */}
-      {filteredRoles.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredRoles.map((role) => {
-            const teamStyle = TEAM_LABELS[role.team] || TEAM_LABELS.all;
-            const editionInfo = EDITIONS[role.edition] || { label: 'Custom' };
-
-            return (
-              <div
-                key={role.id}
-                className="bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-4 transition-all flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md"
-              >
-                <div className="space-y-2">
-                  {/* Card Header: Icon, Name, Badges */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center shrink-0">
-                        {role.icon}
-                      </span>
-                      <div>
-                        <h2 className="text-sm font-bold text-zinc-100 leading-snug">
-                          {role.name}
-                        </h2>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span
-                            className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${teamStyle.badge}`}
-                          >
-                            {teamStyle.label}
+                return (
+                  <div
+                    key={role.id}
+                    className="bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-4 transition-all flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md"
+                  >
+                    <div className="space-y-2">
+                      {/* Card Header: Icon, Name, Badges */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center shrink-0">
+                            {role.icon}
                           </span>
-                          <span className="text-[9px] text-zinc-400 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700">
-                            {editionInfo.label}
-                          </span>
+                          <div>
+                            <h2 className="text-sm font-bold text-zinc-100 leading-snug">
+                              {role.name}
+                            </h2>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span
+                                className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${teamStyle.badge}`}
+                              >
+                                {teamStyle.label}
+                              </span>
+                              <span className="text-[9px] text-zinc-400 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700">
+                                {editionInfo.label}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Ability text */}
+                      <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-800/60">
+                        {role.ability || 'No official description provided.'}
+                      </p>
+                    </div>
+
+                    {/* Show to player CTA */}
+                    <div className="pt-1 flex items-center justify-end">
+                      <button
+                        onClick={() =>
+                          onShowRoleFullscreen({
+                            title: role.name,
+                            icon: role.icon,
+                            subtitle: `${teamStyle.label} • ${editionInfo.label}`,
+                            body: role.ability,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-amber-300 hover:text-amber-200 border border-zinc-700 hover:border-amber-500/40 rounded-xl text-xs font-semibold transition-all active:scale-95"
+                        title="Display card in fullscreen mode to show a player silently"
+                      >
+                        <span>👁️</span>
+                        <span>Show to Player</span>
+                      </button>
                     </div>
                   </div>
-
-                  {/* Ability text */}
-                  <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-800/60">
-                    {role.ability || 'No official description provided.'}
-                  </p>
-                </div>
-
-                {/* Show to player CTA */}
-                <div className="pt-1 flex items-center justify-end">
-                  <button
-                    onClick={() =>
-                      onShowRoleFullscreen({
-                        title: role.name,
-                        icon: role.icon,
-                        subtitle: `${teamStyle.label} • ${editionInfo.label}`,
-                        body: role.ability,
-                      })
-                    }
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-amber-300 hover:text-amber-200 border border-zinc-700 hover:border-amber-500/40 rounded-xl text-xs font-semibold transition-all active:scale-95"
-                    title="Display card in fullscreen mode to show a player silently"
-                  >
-                    <span>👁️</span>
-                    <span>Show to Player</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 text-center space-y-3">
+              <div className="text-3xl">🔍</div>
+              <p className="text-sm text-zinc-300 font-semibold">No characters found</p>
+              <p className="text-xs text-zinc-500">
+                No roles matched your search criteria "{searchQuery}". Try a different keyword or reset filters.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedTeam('all');
+                  setSelectedEdition('all');
+                }}
+                className="px-4 py-2 bg-zinc-800 text-zinc-200 text-xs font-bold rounded-xl border border-zinc-700 hover:bg-zinc-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 text-center space-y-3">
-          <div className="text-3xl">🔍</div>
-          <p className="text-sm text-zinc-300 font-semibold">No characters found</p>
-          <p className="text-xs text-zinc-500">
-            No roles matched your search criteria "{searchQuery}". Try a different keyword or reset filters.
+      )}
+
+      {/* SUB-SECTION 2: RULES & GLOSSARY */}
+      {activeSubTab === 'rules' && (
+        <div className="space-y-3">
+          <p className="text-xs text-zinc-400">
+            Essential mechanical definitions and rulings for Storytellers.
           </p>
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedTeam('all');
-              setSelectedEdition('all');
-            }}
-            className="px-4 py-2 bg-zinc-800 text-zinc-200 text-xs font-bold rounded-xl border border-zinc-700 hover:bg-zinc-700 transition-colors"
-          >
-            Clear Filters
-          </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {GLOSSARY_RULES.map((rule) => (
+              <div
+                key={rule.term}
+                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{rule.icon}</span>
+                  <h3 className="text-sm font-bold text-zinc-100">{rule.term}</h3>
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80">
+                  {rule.desc}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

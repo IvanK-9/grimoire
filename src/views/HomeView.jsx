@@ -197,6 +197,34 @@ export default function HomeView({
               </p>
             </div>
           </button>
+
+          {/* Messages & Big Text Card */}
+          <button
+            onClick={() => onNavigate('messages')}
+            className="sm:col-span-2 text-left bg-gradient-to-r from-zinc-900 via-zinc-900 to-amber-950/20 hover:to-amber-950/30 border border-zinc-800 hover:border-amber-500/40 rounded-2xl p-4 transition-all group shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+                💬
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-zinc-100 group-hover:text-amber-300 transition-colors">
+                    Messages & Big Text Communicator
+                  </h3>
+                  <span className="text-[9px] font-black bg-amber-500/20 text-amber-400 px-1.5 py-0.2 rounded border border-amber-500/30 uppercase">
+                    New
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                  Silent night cues (YES/NO, numbers 0-3, 'choose a player'), role tokens in giant text, and on-the-fly free text generator.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold text-amber-400 shrink-0 self-end sm:self-center group-hover:translate-x-1 transition-transform">
+              Open Communicator ➔
+            </span>
+          </button>
         </div>
       </div>
 

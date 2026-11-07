@@ -1,0 +1,235 @@
+// Built-in Storyteller Prompts & Big Text Messages Library for Blood on the Clocktower
+
+export const MESSAGE_CATEGORIES = {
+  all: { id: 'all', label: 'All Messages', icon: '✦' },
+  favorites: { id: 'favorites', label: 'Favourites ⭐', icon: '⭐' },
+  signals: { id: 'signals', label: 'Signals & Answers', icon: '👍' },
+  numbers: { id: 'numbers', label: 'Numbers (0-3)', icon: '🔢' },
+  prompts: { id: 'prompts', label: 'Player Prompts', icon: '👉' },
+  statuses: { id: 'statuses', label: 'Statuses & Events', icon: '📜' },
+  custom: { id: 'custom', label: 'Custom', icon: '✍️' },
+};
+
+export const COLOR_THEMES = {
+  green: {
+    bg: 'bg-emerald-950/80',
+    border: 'border-emerald-500/50',
+    text: 'text-emerald-300',
+    fullscreenBg: 'bg-emerald-950',
+    badge: 'bg-emerald-600',
+  },
+  red: {
+    bg: 'bg-red-950/80',
+    border: 'border-red-500/50',
+    text: 'text-red-300',
+    fullscreenBg: 'bg-red-950',
+    badge: 'bg-red-600',
+  },
+  blue: {
+    bg: 'bg-blue-950/80',
+    border: 'border-blue-500/50',
+    text: 'text-blue-300',
+    fullscreenBg: 'bg-blue-950',
+    badge: 'bg-blue-600',
+  },
+  amber: {
+    bg: 'bg-amber-950/80',
+    border: 'border-amber-500/50',
+    text: 'text-amber-300',
+    fullscreenBg: 'bg-amber-950',
+    badge: 'bg-amber-600',
+  },
+  purple: {
+    bg: 'bg-purple-950/80',
+    border: 'border-purple-500/50',
+    text: 'text-purple-300',
+    fullscreenBg: 'bg-purple-950',
+    badge: 'bg-purple-600',
+  },
+  pink: {
+    bg: 'bg-pink-950/80',
+    border: 'border-pink-500/50',
+    text: 'text-pink-300',
+    fullscreenBg: 'bg-pink-950',
+    badge: 'bg-pink-600',
+  },
+  zinc: {
+    bg: 'bg-zinc-900',
+    border: 'border-zinc-700',
+    text: 'text-zinc-200',
+    fullscreenBg: 'bg-zinc-950',
+    badge: 'bg-zinc-600',
+  },
+};
+
+export const BUILT_IN_MESSAGES = [
+  // Signals & Answers
+  {
+    id: 'yes',
+    category: 'signals',
+    text: 'YES',
+    icon: '👍',
+    color: 'green',
+    description: 'Affirmative response for Fortune Teller, Artist, Savant, etc.',
+  },
+  {
+    id: 'no',
+    category: 'signals',
+    text: 'NO',
+    icon: '👎',
+    color: 'red',
+    description: 'Negative response for Fortune Teller, Artist, Savant, etc.',
+  },
+  {
+    id: 'true',
+    category: 'signals',
+    text: 'TRUE',
+    icon: '✓',
+    color: 'green',
+    description: 'Gossip, Savant, or Artist verification',
+  },
+  {
+    id: 'false',
+    category: 'signals',
+    text: 'FALSE',
+    icon: '✗',
+    color: 'red',
+    description: 'Gossip, Savant, or Artist verification',
+  },
+
+  // Numbers (0-3)
+  {
+    id: 'num_0',
+    category: 'numbers',
+    text: '0',
+    icon: '0️⃣',
+    color: 'blue',
+    description: 'Zero evil neighbours or count (Empath, Chef, Math)',
+  },
+  {
+    id: 'num_1',
+    category: 'numbers',
+    text: '1',
+    icon: '1️⃣',
+    color: 'blue',
+    description: 'One evil neighbour or count (Empath, Chef, Math, Oracle)',
+  },
+  {
+    id: 'num_2',
+    category: 'numbers',
+    text: '2',
+    icon: '2️⃣',
+    color: 'blue',
+    description: 'Two evil neighbours or count (Empath, Chef, Math, Oracle)',
+  },
+  {
+    id: 'num_3',
+    category: 'numbers',
+    text: '3',
+    icon: '3️⃣',
+    color: 'blue',
+    description: 'Three count (Clockmaker, Chambermaid, Math)',
+  },
+
+  // Player Prompts
+  {
+    id: 'choose_player',
+    category: 'prompts',
+    text: 'Choose a player',
+    icon: '👉',
+    color: 'amber',
+    description: 'Instruct player to point at a person',
+  },
+  {
+    id: 'choose_two_players',
+    category: 'prompts',
+    text: 'Choose 2 players',
+    icon: '👥',
+    color: 'amber',
+    description: 'Point to two players (Fortune Teller, Innkeeper, etc.)',
+  },
+  {
+    id: 'choose_character',
+    category: 'prompts',
+    text: 'Choose a character',
+    icon: '🃏',
+    color: 'purple',
+    description: 'Select a role from the script sheet (Cerenovus, Pit-Hag, Philosopher)',
+  },
+  {
+    id: 'used_ability',
+    category: 'prompts',
+    text: 'Did you use your ability?',
+    icon: '❓',
+    color: 'purple',
+    description: 'Prompt once-per-game roles (Slayer, Seamstress, Artist)',
+  },
+  {
+    id: 'close_eyes',
+    category: 'prompts',
+    text: 'Close your eyes',
+    icon: '🙈',
+    color: 'zinc',
+    description: 'Night phase: put head down and sleep',
+  },
+  {
+    id: 'wake_up',
+    category: 'prompts',
+    text: 'Wake up',
+    icon: '👀',
+    color: 'amber',
+    description: 'Storyteller tap or signal to wake',
+  },
+
+  // Statuses & Events
+  {
+    id: 'drunk_poisoned',
+    category: 'statuses',
+    text: 'You are DRUNK / POISONED',
+    icon: '🍺',
+    color: 'amber',
+    description: 'Storyteller communication or Sailor/Innkeeper reminder',
+  },
+  {
+    id: 'safe_tonight',
+    category: 'statuses',
+    text: 'You are SAFE tonight',
+    icon: '🛡️',
+    color: 'blue',
+    description: 'Protected by Monk, Soldier, or Innkeeper',
+  },
+  {
+    id: 'died_tonight',
+    category: 'statuses',
+    text: 'Someone died tonight',
+    icon: '💀',
+    color: 'red',
+    description: 'Night casualty signal',
+  },
+  {
+    id: 'no_death',
+    category: 'statuses',
+    text: 'No one died tonight',
+    icon: '🕊️',
+    color: 'green',
+    description: 'Peaceful night announcement',
+  },
+  {
+    id: 'madness',
+    category: 'statuses',
+    text: 'You are MAD that you are this character',
+    icon: '🧠',
+    color: 'pink',
+    description: 'Cerenovus / Mutant / Pixie madness prompt',
+  },
+];
+
+export const DEFAULT_FAVORITE_IDS = [
+  'yes',
+  'no',
+  'choose_player',
+  'num_0',
+  'num_1',
+  'num_2',
+  'close_eyes',
+];
