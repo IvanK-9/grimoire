@@ -1,0 +1,615 @@
+import React, { useState } from 'react';
+import GrimoireCircle from '../components/GrimoireCircle';
+import RoleBalanceTracker from '../components/RoleBalanceTracker';
+import NightFlashcards from '../components/NightFlashcards';
+
+export default function GamesView({
+  // Game State
+  scriptName,
+  playerCount,
+  onSetPlayerCount,
+  scriptRoles,
+  bagRoles,
+  onToggleRoleInBag,
+  drunkDisguise,
+  onSetDrunkDisguise,
+  availableTownsfolkForDrunk,
+  physicalTokensInBag,
+  groupedScript,
+  TEAM_STYLES,
+  getRoleInfo,
+  seats,
+  onAssignToken,
+  onUpdateSeatName,
+  onToggleDead,
+  onToggleDrunk,
+  onToggleTraveller,
+  onSetTravellerRole,
+  onSetTravellerAlignment,
+  onToggleReminder,
+  handleAddSeat,
+  handleAddTraveller,
+  handleRemoveSeat,
+  onShowToPlayer,
+  onOpenScriptModal,
+  // History State
+  gameHistory = [],
+  onFinishGame,
+  onDeleteHistoryItem,
+  onClearHistory,
+  initialSubTab = 'live', // 'live' | 'history'
+}) {
+  const [activeSubSection, setActiveSubSection] = useState(initialSubTab); // 'live' | 'history'
+  const [activeLiveTab, setActiveLiveTab] = useState('table'); // 'bag' | 'table' | 'night'
+
+  // Finish Game Modal State
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [finishWinner, setFinishWinner] = useState('good'); // 'good' | 'evil' | 'draw'
+  const [finishNotes, setFinishNotes] = useState('');
+
+  // Snapshot Viewer Modal
+  const [viewingSnapshot, setViewingSnapshot] = useState(null);
+
+  const isDrunkInBag = bagRoles.includes('drunk');
+
+  const handleConfirmFinish = () => {
+    onFinishGame({
+      winner: finishWinner,
+      notes: finishNotes.trim(),
+    });
+    setShowFinishModal(false);
+    setFinishNotes('');
+    setActiveSubSection('history');
+  };
+
+  const handleExportHistory = () => {
+    const jsonStr = JSON.stringify(gameHistory, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `botc_games_history_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col select-none animate-fadeIn pb-20 md:pb-8">
+      {/* Top Mode Bar: Live Grimoire vs History */}
+      <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center justify-between sticky top-[53px] md:top-[89px] z-20">
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+          <button
+            onClick={() => setActiveSubSection('live')}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeSubSection === 'live'
+                ? 'bg-amber-500 text-zinc-950 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span>Live Grimoire</span>
+          </button>
+          <button
+            onClick={() => setActiveSubSection('history')}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeSubSection === 'history'
+                ? 'bg-amber-500 text-zinc-950 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <span>📜</span>
+            <span>History ({gameHistory.length})</span>
+          </button>
+        </div>
+
+        {activeSubSection === 'live' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenScriptModal}
+              title="Change Script"
+              className="text-xs bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-700 font-semibold px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+            >
+              <span className="text-[10px] text-zinc-400">Script:</span>
+              <span className="text-amber-400 font-bold max-w-[90px] sm:max-w-none truncate">{scriptName}</span>
+              <span className="text-[9px]">▾</span>
+            </button>
+            <button
+              onClick={() => setShowFinishModal(true)}
+              className="text-xs bg-red-950/70 hover:bg-red-900/80 text-red-200 border border-red-700/60 font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
+              title="Archive game to history and declare winner"
+            >
+              <span>🏁</span>
+              <span className="hidden sm:inline">Finish Game</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* MODE 1: LIVE GRIMOIRE */}
+      {activeSubSection === 'live' && (
+        <div className="flex-1 flex flex-col">
+          {/* Sub-Tabs: 1. Bag | 2. Table Circle | 3. Prompts */}
+          <div className="grid grid-cols-3 bg-zinc-900/90 border-b border-zinc-800 text-xs sm:text-sm font-semibold sticky top-[95px] md:top-[131px] z-10 backdrop-blur-sm">
+            <button
+              onClick={() => setActiveLiveTab('bag')}
+              className={`py-2.5 border-b-2 transition-all ${
+                activeLiveTab === 'bag'
+                  ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              1. Bag ({bagRoles.length})
+            </button>
+            <button
+              onClick={() => setActiveLiveTab('table')}
+              className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
+                activeLiveTab === 'table'
+                  ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <span>2. Table Circle</span>
+              <span>⭕</span>
+            </button>
+            <button
+              onClick={() => setActiveLiveTab('night')}
+              className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
+                activeLiveTab === 'night'
+                  ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
+                  : 'border-transparent text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <span>3. Prompts</span>
+              <span>🌙</span>
+            </button>
+          </div>
+
+          {/* TAB 1: BAG SETUP */}
+          {activeLiveTab === 'bag' && (
+            <main className="p-4 space-y-5 max-w-lg mx-auto w-full flex-1">
+              {/* Player Count */}
+              <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                    Number of Players:
+                  </span>
+                  <span className="text-xs font-black text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">
+                    {playerCount} Players
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => onSetPlayerCount(num)}
+                      className={`w-9 h-9 rounded-xl font-bold text-xs shrink-0 transition-all ${
+                        playerCount === num
+                          ? 'bg-amber-500 text-zinc-950 shadow-md scale-105'
+                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-750'
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Good vs Evil Balance Formula */}
+              <RoleBalanceTracker
+                playerCount={playerCount}
+                bagRoles={bagRoles}
+                getRoleInfo={getRoleInfo}
+                onToggleRole={onToggleRoleInBag}
+              />
+
+              {/* Drunk Disguise Picker */}
+              {isDrunkInBag && (
+                <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+                    <span>🍺 Drunk Townsfolk Disguise:</span>
+                    <span className="text-[10px] text-zinc-400 font-normal">Token in bag</span>
+                  </div>
+                  <select
+                    value={drunkDisguise}
+                    onChange={(e) => onSetDrunkDisguise(e.target.value)}
+                    className="w-full bg-zinc-900 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="">-- Choose unused Townsfolk disguise --</option>
+                    {availableTownsfolkForDrunk.map((tf) => (
+                      <option key={tf.id} value={tf.id}>
+                        {tf.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Script Roles Grid */}
+              {Object.entries(groupedScript).map(([teamKey, roles]) => {
+                if (!roles.length) return null;
+                const st = TEAM_STYLES[teamKey] || TEAM_STYLES.unknown;
+                return (
+                  <section key={teamKey} className="space-y-2">
+                    <h2 className={`text-xs font-bold uppercase ${st.text}`}>{st.label}</h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      {roles.map((r) => {
+                        const sel = bagRoles.includes(r.id);
+                        const dis = drunkDisguise === r.id;
+                        return (
+                          <button
+                            key={r.id}
+                            onClick={() => onToggleRoleInBag(r.id)}
+                            className={`text-left px-3 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-between transition-colors ${
+                              sel
+                                ? `${st.bg} ${st.border} text-white`
+                                : dis
+                                ? 'bg-amber-950/40 border-amber-500 text-amber-300'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                            }`}
+                          >
+                            <span className="truncate flex items-center gap-1.5">
+                              <span>{r.icon}</span>
+                              <span>{r.name}</span>
+                            </span>
+                            {sel && <span className={`w-2.5 h-2.5 rounded-full ${st.badge} shrink-0`} />}
+                            {dis && (
+                              <span className="text-[9px] font-black bg-amber-500 text-zinc-950 px-1 rounded shrink-0">
+                                DRUNK
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </main>
+          )}
+
+          {/* TAB 2: TABLE CIRCLE */}
+          {activeLiveTab === 'table' && (
+            <main className="p-4 max-w-lg mx-auto w-full flex-1">
+              <GrimoireCircle
+                seats={seats}
+                drunkDisguise={drunkDisguise}
+                physicalTokensInBag={physicalTokensInBag}
+                availableTownsfolk={availableTownsfolkForDrunk}
+                getRoleInfo={getRoleInfo}
+                TEAM_STYLES={TEAM_STYLES}
+                onAssignToken={onAssignToken}
+                onUpdateSeatName={onUpdateSeatName}
+                onToggleDead={onToggleDead}
+                onToggleDrunk={onToggleDrunk}
+                onToggleTraveller={onToggleTraveller}
+                onSetTravellerRole={onSetTravellerRole}
+                onSetTravellerAlignment={onSetTravellerAlignment}
+                onToggleReminder={onToggleReminder}
+                onAddSeat={handleAddSeat}
+                onAddTraveller={handleAddTraveller}
+                onRemoveSeat={handleRemoveSeat}
+                onShowToPlayer={onShowToPlayer}
+              />
+            </main>
+          )}
+
+          {/* TAB 3: PROMPTS */}
+          {activeLiveTab === 'night' && (
+            <NightFlashcards
+              scriptRoles={scriptRoles}
+              bagRoles={bagRoles}
+              drunkDisguise={drunkDisguise}
+              getRoleInfo={getRoleInfo}
+              onShowCard={onShowToPlayer}
+            />
+          )}
+        </div>
+      )}
+
+      {/* MODE 2: HISTORY OF GAMES */}
+      {activeSubSection === 'history' && (
+        <main className="p-4 sm:p-6 max-w-2xl mx-auto w-full space-y-4 flex-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
+                <span>🏆</span>
+                <span>Past Games Archive</span>
+              </h2>
+              <p className="text-xs text-zinc-400">
+                {gameHistory.length} recorded session{gameHistory.length === 1 ? '' : 's'}
+              </p>
+            </div>
+
+            {gameHistory.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportHistory}
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1"
+                >
+                  <span>📥</span>
+                  <span>Export JSON</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm('Clear all game history? This cannot be undone.')) {
+                      onClearHistory();
+                    }
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300 p-1.5"
+                  title="Clear history"
+                >
+                  🗑️
+                </button>
+              </div>
+            )}
+          </div>
+
+          {gameHistory.length > 0 ? (
+            <div className="space-y-3">
+              {gameHistory.map((game) => (
+                <div
+                  key={game.id}
+                  className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-3 transition-colors hover:border-zinc-700"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-zinc-100">{game.scriptName}</span>
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                            game.winner === 'good'
+                              ? 'bg-blue-950/80 text-blue-300 border-blue-600/50'
+                              : game.winner === 'evil'
+                              ? 'bg-red-950/80 text-red-300 border-red-600/50'
+                              : 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                          }`}
+                        >
+                          {game.winner === 'good'
+                            ? 'Good Wins 😇'
+                            : game.winner === 'evil'
+                            ? 'Evil Wins 😈'
+                            : 'Draw / Abandoned 🏳️'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-400 mt-0.5">
+                        {new Date(game.date).toLocaleDateString()} at{' '}
+                        {new Date(game.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} •{' '}
+                        {game.playerCount} players
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => onDeleteHistoryItem(game.id)}
+                      className="text-zinc-500 hover:text-red-400 text-xs p-1"
+                      title="Delete entry"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {game.notes && (
+                    <div className="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80 text-xs text-zinc-300 italic">
+                      "{game.notes}"
+                    </div>
+                  )}
+
+                  {/* Seat count summary & view snapshot */}
+                  <div className="flex items-center justify-between pt-1 border-t border-zinc-800/80 text-xs">
+                    <span className="text-zinc-400">
+                      {game.seatsSnapshot?.filter((s) => !s.isDead).length || 0} alive at end
+                    </span>
+                    <button
+                      onClick={() => setViewingSnapshot(game)}
+                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-amber-300 border border-zinc-700 rounded-xl font-semibold flex items-center gap-1 transition-colors"
+                    >
+                      <span>👁️</span>
+                      <span>View Final Table</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-8 text-center space-y-3">
+              <div className="text-3xl">📜</div>
+              <p className="text-sm font-semibold text-zinc-300">No finished games yet</p>
+              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                When you finish a game in the Live Grimoire, tap "Finish Game" to log the winning team, final table layout, and notes here.
+              </p>
+              <button
+                onClick={() => setActiveSubSection('live')}
+                className="px-4 py-2 bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs"
+              >
+                Go to Live Grimoire ➔
+              </button>
+            </div>
+          )}
+        </main>
+      )}
+
+      {/* FINISH GAME MODAL */}
+      {showFinishModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-scaleUp">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                <span>🏁</span>
+                <span>Finish & Archive Game</span>
+              </h3>
+              <button
+                onClick={() => setShowFinishModal(false)}
+                className="text-zinc-400 hover:text-zinc-200 text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              Record this game's outcome and final table state into history.
+            </p>
+
+            {/* Winner Selection */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-300 uppercase">Who won?</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFinishWinner('good')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                    finishWinner === 'good'
+                      ? 'bg-blue-600 text-white border-blue-400 shadow-md'
+                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-750'
+                  }`}
+                >
+                  Good Wins 😇
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFinishWinner('evil')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                    finishWinner === 'evil'
+                      ? 'bg-red-600 text-white border-red-400 shadow-md'
+                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-750'
+                  }`}
+                >
+                  Evil Wins 😈
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFinishWinner('draw')}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                    finishWinner === 'draw'
+                      ? 'bg-zinc-600 text-white border-zinc-400 shadow-md'
+                      : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-750'
+                  }`}
+                >
+                  Draw / Other 🏳️
+                </button>
+              </div>
+            </div>
+
+            {/* Notes Textarea */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-300 uppercase">
+                Storyteller Notes (Optional)
+              </label>
+              <textarea
+                value={finishNotes}
+                onChange={(e) => setFinishNotes(e.target.value)}
+                placeholder="e.g. Slayer shot the Virgin on Day 1. Imp starpassed to Baron on Night 3..."
+                rows={3}
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowFinishModal(false)}
+                className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-300 font-semibold rounded-xl text-xs border border-zinc-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmFinish}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl text-xs transition-all shadow-md"
+              >
+                Save to History & Finish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SNAPSHOT VIEWER MODAL */}
+      {viewingSnapshot && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-5 space-y-4 max-h-[85vh] flex flex-col shadow-2xl animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-2">
+                  <span>Table Snapshot:</span>
+                  <span className="text-amber-400">{viewingSnapshot.scriptName}</span>
+                </h3>
+                <p className="text-[11px] text-zinc-400">
+                  {new Date(viewingSnapshot.date).toLocaleDateString()} • Result:{' '}
+                  <strong className="text-zinc-200 uppercase">{viewingSnapshot.winner}</strong>
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingSnapshot(null)}
+                className="text-zinc-400 hover:text-zinc-200 text-base"
+              >
+                ✕
+              </button>
+            </div>
+
+            {viewingSnapshot.notes && (
+              <div className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-xs text-zinc-300 italic">
+                "{viewingSnapshot.notes}"
+              </div>
+            )}
+
+            {/* List of seats */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {viewingSnapshot.seatsSnapshot?.map((s) => {
+                const roleInfo = s.drawnToken ? getRoleInfo(s.drawnToken) : null;
+                return (
+                  <div
+                    key={s.seat}
+                    className={`p-2.5 rounded-xl border flex items-center justify-between text-xs ${
+                      s.isDead
+                        ? 'bg-zinc-950/80 border-zinc-800/80 text-zinc-500'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-zinc-800 text-zinc-400 font-bold flex items-center justify-center text-[10px]">
+                        {s.seat}
+                      </span>
+                      <div>
+                        <div className="font-semibold flex items-center gap-1.5">
+                          <span>{s.name || `Player ${s.seat}`}</span>
+                          {s.isDead && (
+                            <span className="text-[10px] text-zinc-500 font-bold">💀 DEAD</span>
+                          )}
+                        </div>
+                        {roleInfo && (
+                          <div className="text-[11px] text-zinc-400 flex items-center gap-1">
+                            <span>{roleInfo.icon}</span>
+                            <span>{roleInfo.name}</span>
+                            {s.isDrunk && (
+                              <span className="text-[9px] bg-amber-500 text-zinc-950 font-bold px-1 rounded">
+                                DRUNK
+                              </span>
+                            )}
+                            {s.isTraveller && (
+                              <span className="text-[9px] bg-purple-500 text-white font-bold px-1 rounded">
+                                TRAVELLER ({s.travellerAlignment})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-2 border-t border-zinc-800 flex justify-end">
+              <button
+                onClick={() => setViewingSnapshot(null)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-bold rounded-xl text-xs"
+              >
+                Close Snapshot
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import NightFlashcards, { FullscreenFlashcard } from './components/NightFlashcards';
-import GrimoireCircle from './components/GrimoireCircle';
-import RoleBalanceTracker from './components/RoleBalanceTracker';
+import AppNavBar from './components/navigation/AppNavBar';
+import HomeView from './views/HomeView';
+import CompendiumView from './views/CompendiumView';
+import ScriptsView from './views/ScriptsView';
+import GamesView from './views/GamesView';
 import ScriptSelectorModal from './components/ScriptSelectorModal';
 import GameStateModal from './components/GameStateModal';
+import { FullscreenFlashcard } from './components/NightFlashcards';
 import { resolveRoleInfo } from './data/roles';
 import { SCRIPT_PRESETS } from './data/scripts';
 
@@ -61,7 +64,11 @@ function useLocalStorage(key, defaultValue) {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useLocalStorage('botc_active_tab', 'bag');
+  // Navigation State: 'home' | 'compendium' | 'scripts' | 'games'
+  const [activeMainView, setActiveMainView] = useLocalStorage('botc_main_view', 'home');
+  const [gamesInitialSubTab, setGamesInitialSubTab] = useState('live');
+
+  // Game Engine State
   const [playerCount, setPlayerCount] = useLocalStorage('botc_player_count', 8);
   const [scriptName, setScriptName] = useLocalStorage('botc_script_name', 'Trouble Brewing');
   const [scriptRoles, setScriptRoles] = useLocalStorage('botc_script_roles', SCRIPT_PRESETS.trouble_brewing.roles);
@@ -70,17 +77,20 @@ export default function App() {
   const [seats, setSeats] = useLocalStorage('botc_seats', []);
   const [fullscreenCard, setFullscreenCard] = useState(null);
 
+  // App-Wide Persistent Collections
+  const [gameHistory, setGameHistory] = useLocalStorage('botc_game_history', []);
+  const [customScripts, setCustomScripts] = useLocalStorage('botc_custom_scripts', []);
+
   // Modals
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
 
-  // Initialize or sanitize seats on load or count change
+  // Sanitize seats on load or count change
   useEffect(() => {
     setSeats((prev) => {
       if (!Array.isArray(prev) || prev.length === 0) {
         return sanitizeSeats([], playerCount);
       }
-      // Migrate missing fields on existing seats
       const hasMissingFields = prev.some((s) => typeof s.isDrunk !== 'boolean' || !Array.isArray(s.reminders));
       if (hasMissingFields) {
         return sanitizeSeats(prev, prev.length);
@@ -88,6 +98,10 @@ export default function App() {
       return prev;
     });
   }, [playerCount, setSeats]);
+
+  const hasActiveGame = useMemo(() => {
+    return seats.some((s) => s.drawnToken || s.name) || bagRoles.length > 0;
+  }, [seats, bagRoles]);
 
   const toggleRoleInBag = (roleId) => {
     setBagRoles((prev) => {
@@ -100,8 +114,6 @@ export default function App() {
     });
   };
 
-  const isDrunkInBag = bagRoles.includes('drunk');
-
   const availableTownsfolkForDrunk = useMemo(
     () => scriptRoles.map(getRoleInfo).filter((r) => r && r.team === 'townsfolk' && !bagRoles.includes(r.id)),
     [scriptRoles, bagRoles]
@@ -112,7 +124,6 @@ export default function App() {
     [bagRoles, drunkDisguise]
   );
 
-  // Non-sticky token assignment
   const handleAssignToken = (idx, token) => {
     setSeats((prev) =>
       prev.map((s, i) => {
@@ -127,7 +138,6 @@ export default function App() {
     );
   };
 
-  // Safe Drunk toggle without hardcoded fallback
   const handleToggleDrunk = (idx) => {
     setSeats((prev) =>
       prev.map((s, i) => {
@@ -279,7 +289,12 @@ export default function App() {
     setBagRoles([]);
     setDrunkDisguise('');
     setSeats(sanitizeSeats([], playerCount));
-    setActiveTab('bag');
+  };
+
+  const handleStartNewGame = () => {
+    handleResetGame();
+    setActiveMainView('games');
+    setGamesInitialSubTab('live');
   };
 
   const handleSelectScript = (name, roles) => {
@@ -287,6 +302,49 @@ export default function App() {
     setScriptRoles(roles);
     setBagRoles([]);
     setDrunkDisguise('');
+    setShowScriptModal(false);
+  };
+
+  const handleSaveCustomScript = (script) => {
+    setCustomScripts((prev) => {
+      const filtered = Array.isArray(prev) ? prev.filter((s) => s.id !== script.id) : [];
+      return [script, ...filtered];
+    });
+  };
+
+  const handleDeleteCustomScript = (id) => {
+    setCustomScripts((prev) => (Array.isArray(prev) ? prev.filter((s) => s.id !== id) : []));
+  };
+
+  const handleFinishGame = ({ winner, notes }) => {
+    const finishedSession = {
+      id: 'game_' + Date.now(),
+      date: new Date().toISOString(),
+      scriptName,
+      playerCount: seats.length,
+      winner,
+      notes,
+      seatsSnapshot: seats.map((s) => ({
+        seat: s.seat,
+        name: s.name,
+        drawnToken: s.drawnToken,
+        isDrunk: s.isDrunk,
+        isDead: s.isDead,
+        isTraveller: s.isTraveller,
+        travellerAlignment: s.travellerAlignment,
+        reminders: [...(s.reminders || [])],
+      })),
+      bagRoles: [...bagRoles],
+    };
+    setGameHistory((prev) => [finishedSession, ...(Array.isArray(prev) ? prev : [])]);
+  };
+
+  const handleDeleteHistoryItem = (id) => {
+    setGameHistory((prev) => (Array.isArray(prev) ? prev.filter((g) => g.id !== id) : []));
+  };
+
+  const handleClearHistory = () => {
+    setGameHistory([]);
   };
 
   const getGameStateSnapshot = () => ({
@@ -312,11 +370,20 @@ export default function App() {
     }
   };
 
+  // Quick navigation helper
+  const handleNavigate = (view, subSection = 'live') => {
+    setActiveMainView(view);
+    if (view === 'games' && subSection) {
+      setGamesInitialSubTab(subSection);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans select-none flex flex-col">
+      {/* Fullscreen Flashcard Modal for player presentation */}
       <FullscreenFlashcard card={fullscreenCard} onClose={() => setFullscreenCard(null)} />
 
-      {/* Script Selector Modal */}
+      {/* Script Selector Modal (Quick Switch) */}
       {showScriptModal && (
         <ScriptSelectorModal
           currentScriptName={scriptName}
@@ -335,22 +402,32 @@ export default function App() {
         />
       )}
 
-      {/* Sticky Header with Script & Backup Controls */}
+      {/* Persistent Global Header */}
       <header className="sticky top-0 z-30 bg-zinc-900 border-b border-zinc-800 px-4 py-2.5 flex items-center justify-between shadow-md pt-[max(0.625rem,env(safe-area-inset-top))]">
-        <div>
-          <h1 className="text-sm sm:text-base font-bold text-amber-400 leading-tight">
-            BotC Pocket Grimoire
-          </h1>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[11px] text-zinc-400">Script:</span>
-            <button
-              onClick={() => setShowScriptModal(true)}
-              title="Change edition or load custom script"
-              className="inline-flex items-center gap-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold px-2 py-0.5 rounded border border-zinc-700 hover:border-amber-500/50 transition-colors"
-            >
-              <span>{scriptName}</span>
-              <span className="text-[9px] text-amber-400">▾</span>
-            </button>
+        <div
+          onClick={() => setActiveMainView('home')}
+          className="cursor-pointer group flex items-center gap-2"
+        >
+          <span className="text-xl">🕯️</span>
+          <div>
+            <h1 className="text-sm sm:text-base font-bold text-amber-400 leading-tight group-hover:text-amber-300 transition-colors">
+              BotC Pocket Grimoire
+            </h1>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[11px] text-zinc-400">Script:</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowScriptModal(true);
+                }}
+                title="Change edition or load custom script"
+                className="inline-flex items-center gap-1 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 text-[11px] font-bold px-2 py-0.5 rounded border border-zinc-700 hover:border-amber-500/50 transition-colors"
+              >
+                <span>{scriptName}</span>
+                <span className="text-[9px] text-amber-400">▾</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -358,189 +435,92 @@ export default function App() {
           <button
             onClick={() => setShowBackupModal(true)}
             title="Backup, export, import or reset session"
-            className="text-xs text-zinc-300 hover:text-zinc-100 border border-zinc-700 hover:border-zinc-600 bg-zinc-800 hover:bg-zinc-750 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+            className="text-xs text-zinc-300 hover:text-zinc-100 border border-zinc-700 hover:border-zinc-600 bg-zinc-800 hover:bg-zinc-750 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm active:scale-95"
           >
             <span>💾</span>
-            <span className="hidden sm:inline">Backup & Reset</span>
+            <span className="hidden sm:inline">Backup & State</span>
           </button>
         </div>
       </header>
 
-      {/* Tabs Navigation */}
-      <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-800 text-xs sm:text-sm font-semibold sticky top-[53px] z-20">
-        <button
-          onClick={() => setActiveTab('bag')}
-          className={`py-3 border-b-2 transition-all ${
-            activeTab === 'bag'
-              ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
-              : 'border-transparent text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          1. Bag ({bagRoles.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('table')}
-          className={`py-3 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
-            activeTab === 'table'
-              ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
-              : 'border-transparent text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          <span>2. Table Circle</span>
-          <span>⭕</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('night')}
-          className={`py-3 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
-            activeTab === 'night'
-              ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
-              : 'border-transparent text-zinc-400 hover:text-zinc-200'
-          }`}
-        >
-          <span>3. Prompts</span>
-          <span>🌙</span>
-        </button>
-      </div>
+      {/* Global Navigation Bar (Mobile Bottom / Desktop Top) */}
+      <AppNavBar
+        activeView={activeMainView}
+        onSelectView={setActiveMainView}
+        hasActiveGame={hasActiveGame}
+        activePlayerCount={seats.length}
+      />
 
-      {/* TAB 1: BAG SETUP */}
-      {activeTab === 'bag' && (
-        <main className="p-4 space-y-5 max-w-lg mx-auto w-full flex-1">
-          {/* Step 1: Guest / Player Count Selector */}
-          <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                Number of Players:
-              </span>
-              <span className="text-xs font-black text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">
-                {playerCount} Players
-              </span>
-            </div>
-
-            {/* Quick Player Number Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((num) => (
-                <button
-                  key={num}
-                  onClick={() => handleSetPlayerCount(num)}
-                  className={`w-9 h-9 rounded-xl font-bold text-xs shrink-0 transition-all ${
-                    playerCount === num
-                      ? 'bg-amber-500 text-zinc-950 shadow-md scale-105'
-                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Step 2: Good vs Evil Formula & Interactive Role Slots */}
-          <RoleBalanceTracker
-            playerCount={playerCount}
-            bagRoles={bagRoles}
-            getRoleInfo={getRoleInfo}
-            onToggleRole={toggleRoleInBag}
-          />
-
-          {/* Drunk Disguise Inline Card (if Drunk is picked) */}
-          {isDrunkInBag && (
-            <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-300">
-                <span>🍺 Drunk Townsfolk Disguise:</span>
-                <span className="text-[10px] text-zinc-400 font-normal">Physical token for bag</span>
-              </div>
-              <select
-                value={drunkDisguise}
-                onChange={(e) => setDrunkDisguise(e.target.value)}
-                className="w-full bg-zinc-900 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-400"
-              >
-                <option value="">-- Choose unused Townsfolk disguise --</option>
-                {availableTownsfolkForDrunk.map((tf) => (
-                  <option key={tf.id} value={tf.id}>
-                    {tf.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Role Grid by Team */}
-          {Object.entries(groupedScript).map(([teamKey, roles]) => {
-            if (!roles.length) return null;
-            const st = TEAM_STYLES[teamKey] || TEAM_STYLES.unknown;
-            return (
-              <section key={teamKey} className="space-y-2">
-                <h2 className={`text-xs font-bold uppercase ${st.text}`}>{st.label}</h2>
-                <div className="grid grid-cols-2 gap-2">
-                  {roles.map((r) => {
-                    const sel = bagRoles.includes(r.id);
-                    const dis = drunkDisguise === r.id;
-                    return (
-                      <button
-                        key={r.id}
-                        onClick={() => toggleRoleInBag(r.id)}
-                        className={`text-left px-3 py-2.5 rounded-xl border text-sm font-medium flex items-center justify-between transition-colors ${
-                          sel
-                            ? `${st.bg} ${st.border} text-white`
-                            : dis
-                            ? 'bg-amber-950/40 border-amber-500 text-amber-300'
-                            : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                        }`}
-                      >
-                        <span className="truncate flex items-center gap-1.5">
-                          <span>{r.icon}</span>
-                          <span>{r.name}</span>
-                        </span>
-                        {sel && <span className={`w-2.5 h-2.5 rounded-full ${st.badge} shrink-0`} />}
-                        {dis && (
-                          <span className="text-[9px] font-black bg-amber-500 text-zinc-950 px-1 rounded shrink-0">
-                            DRUNK
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </main>
+      {/* SECTION 1: HOME */}
+      {activeMainView === 'home' && (
+        <HomeView
+          scriptName={scriptName}
+          playerCount={playerCount}
+          seats={seats}
+          bagRoles={bagRoles}
+          gameHistory={gameHistory}
+          onNavigate={handleNavigate}
+          onStartNewGame={handleStartNewGame}
+        />
       )}
 
-      {/* TAB 2: GRIMOIRE TABLE CIRCLE */}
-      {activeTab === 'table' && (
-        <main className="p-4 max-w-lg mx-auto w-full flex-1">
-          <GrimoireCircle
-            seats={seats}
-            drunkDisguise={drunkDisguise}
-            physicalTokensInBag={physicalTokensInBag}
-            availableTownsfolk={availableTownsfolkForDrunk}
-            getRoleInfo={getRoleInfo}
-            TEAM_STYLES={TEAM_STYLES}
-            onAssignToken={handleAssignToken}
-            onUpdateSeatName={handleUpdateSeatName}
-            onToggleDead={handleToggleDead}
-            onToggleDrunk={handleToggleDrunk}
-            onToggleTraveller={handleToggleTraveller}
-            onSetTravellerRole={handleSetTravellerRole}
-            onSetTravellerAlignment={handleSetTravellerAlignment}
-            onToggleReminder={handleToggleReminder}
-            onAddSeat={handleAddSeat}
-            onAddTraveller={handleAddTraveller}
-            onRemoveSeat={handleRemoveSeat}
-            onShowToPlayer={(card) => setFullscreenCard(card)}
-          />
-        </main>
+      {/* SECTION 2: COMPENDIUM */}
+      {activeMainView === 'compendium' && (
+        <CompendiumView
+          onShowRoleFullscreen={(card) => setFullscreenCard(card)}
+        />
       )}
 
-      {/* TAB 3: NIGHT FLASHCARDS */}
-      {activeTab === 'night' && (
-        <NightFlashcards
+      {/* SECTION 3: SCRIPTS */}
+      {activeMainView === 'scripts' && (
+        <ScriptsView
+          currentScriptName={scriptName}
+          onSelectScript={(name, roles) => {
+            handleSelectScript(name, roles);
+            setActiveMainView('games');
+            setGamesInitialSubTab('live');
+          }}
+          customScripts={customScripts}
+          onSaveCustomScript={handleSaveCustomScript}
+          onDeleteCustomScript={handleDeleteCustomScript}
+        />
+      )}
+
+      {/* SECTION 4: GAMES */}
+      {activeMainView === 'games' && (
+        <GamesView
+          scriptName={scriptName}
+          playerCount={playerCount}
+          onSetPlayerCount={handleSetPlayerCount}
           scriptRoles={scriptRoles}
           bagRoles={bagRoles}
+          onToggleRoleInBag={toggleRoleInBag}
           drunkDisguise={drunkDisguise}
+          onSetDrunkDisguise={setDrunkDisguise}
+          availableTownsfolkForDrunk={availableTownsfolkForDrunk}
+          physicalTokensInBag={physicalTokensInBag}
+          groupedScript={groupedScript}
+          TEAM_STYLES={TEAM_STYLES}
           getRoleInfo={getRoleInfo}
-          onShowCard={(card) => setFullscreenCard(card)}
+          seats={seats}
+          onAssignToken={handleAssignToken}
+          onUpdateSeatName={handleUpdateSeatName}
+          onToggleDead={handleToggleDead}
+          onToggleDrunk={handleToggleDrunk}
+          onToggleTraveller={handleToggleTraveller}
+          onSetTravellerRole={handleSetTravellerRole}
+          onSetTravellerAlignment={handleSetTravellerAlignment}
+          onToggleReminder={handleToggleReminder}
+          handleAddSeat={handleAddSeat}
+          handleAddTraveller={handleAddTraveller}
+          handleRemoveSeat={handleRemoveSeat}
+          onShowToPlayer={(card) => setFullscreenCard(card)}
+          onOpenScriptModal={() => setShowScriptModal(true)}
+          gameHistory={gameHistory}
+          onFinishGame={handleFinishGame}
+          onDeleteHistoryItem={handleDeleteHistoryItem}
+          onClearHistory={handleClearHistory}
+          initialSubTab={gamesInitialSubTab}
         />
       )}
     </div>
