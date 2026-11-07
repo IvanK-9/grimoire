@@ -69,6 +69,7 @@ export default function App() {
   // Navigation State: 'home' | 'compendium' | 'scripts' | 'games'
   const [activeMainView, setActiveMainView] = useLocalStorage('botc_main_view', 'home');
   const [gamesInitialSubTab, setGamesInitialSubTab] = useState('live');
+  const [gamesInitialLiveTab, setGamesInitialLiveTab] = useState('bag');
 
   // Game Engine State
   const [playerCount, setPlayerCount] = useLocalStorage('botc_player_count', 8);
@@ -299,6 +300,7 @@ export default function App() {
     handleResetGame();
     setActiveMainView('games');
     setGamesInitialSubTab('live');
+    setGamesInitialLiveTab('bag');
   };
 
   const handleSelectScript = (name, roles) => {
@@ -390,10 +392,18 @@ export default function App() {
   };
 
   // Quick navigation helper
-  const handleNavigate = (view, subSection = 'live') => {
+  const handleNavigate = (view, subOrTab = 'live', optLiveTab) => {
     setActiveMainView(view);
-    if (view === 'games' && subSection) {
-      setGamesInitialSubTab(subSection);
+    if (view === 'games') {
+      if (subOrTab === 'history') {
+        setGamesInitialSubTab('history');
+      } else if (subOrTab === 'table' || subOrTab === 'night' || subOrTab === 'bag') {
+        setGamesInitialSubTab('live');
+        setGamesInitialLiveTab(subOrTab);
+      } else {
+        setGamesInitialSubTab('live');
+        if (optLiveTab) setGamesInitialLiveTab(optLiveTab);
+      }
     }
   };
 
@@ -514,6 +524,7 @@ export default function App() {
           scriptRoles={scriptRoles}
           bagRoles={bagRoles}
           onToggleRoleInBag={toggleRoleInBag}
+          onSetBagRoles={setBagRoles}
           drunkDisguise={drunkDisguise}
           onSetDrunkDisguise={setDrunkDisguise}
           availableTownsfolkForDrunk={availableTownsfolkForDrunk}
@@ -540,7 +551,10 @@ export default function App() {
           onFinishGame={handleFinishGame}
           onDeleteHistoryItem={handleDeleteHistoryItem}
           onClearHistory={handleClearHistory}
-          initialSubTab={gamesInitialSubTab}
+          activeSubSection={gamesInitialSubTab}
+          onSelectSubSection={setGamesInitialSubTab}
+          activeLiveTab={gamesInitialLiveTab}
+          onSelectLiveTab={setGamesInitialLiveTab}
         />
       )}
 

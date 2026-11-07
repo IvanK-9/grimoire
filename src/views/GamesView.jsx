@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import GrimoireCircle from '../components/GrimoireCircle';
 import RoleBalanceTracker from '../components/RoleBalanceTracker';
 import NightFlashcards from '../components/NightFlashcards';
@@ -11,6 +11,7 @@ export default function GamesView({
   scriptRoles,
   bagRoles,
   onToggleRoleInBag,
+  onSetBagRoles,
   drunkDisguise,
   onSetDrunkDisguise,
   availableTownsfolkForDrunk,
@@ -38,10 +39,19 @@ export default function GamesView({
   onFinishGame,
   onDeleteHistoryItem,
   onClearHistory,
-  initialSubTab = 'live', // 'live' | 'history'
+  activeSubSection: controlledSubSection,
+  onSelectSubSection,
+  activeLiveTab: controlledLiveTab,
+  onSelectLiveTab,
 }) {
-  const [activeSubSection, setActiveSubSection] = useState(initialSubTab); // 'live' | 'history'
-  const [activeLiveTab, setActiveLiveTab] = useState('table'); // 'bag' | 'table' | 'night'
+  const [localSubSection, setLocalSubSection] = useState('live');
+  const [localLiveTab, setLocalLiveTab] = useState('bag');
+
+  const currentSubSection = controlledSubSection !== undefined ? controlledSubSection : localSubSection;
+  const setSubSection = onSelectSubSection || setLocalSubSection;
+
+  const currentLiveTab = controlledLiveTab !== undefined ? controlledLiveTab : localLiveTab;
+  const setLiveTab = onSelectLiveTab || setLocalLiveTab;
 
   // Finish Game Modal State
   const [showFinishModal, setShowFinishModal] = useState(false);
@@ -53,6 +63,49 @@ export default function GamesView({
 
   const isDrunkInBag = bagRoles.includes('drunk');
 
+  // Track unassigned tokens between bag and seats
+  const usedTokens = useMemo(() => {
+    return seats.map((s) => s.drawnToken).filter(Boolean);
+  }, [seats]);
+
+  const unassignedTokens = useMemo(() => {
+    return physicalTokensInBag.filter((t) => !usedTokens.includes(t));
+  }, [physicalTokensInBag, usedTokens]);
+
+  // Check overall balance status
+  const isBalanced = useMemo(() => {
+    const rolesWithInfo = bagRoles.map(getRoleInfo).filter(Boolean);
+    const selTF = rolesWithInfo.filter((r) => r.team === 'townsfolk').length;
+    const selOut = rolesWithInfo.filter((r) => r.team === 'outsider').length;
+    const selMin = rolesWithInfo.filter((r) => r.team === 'minion').length;
+    const selDem = rolesWithInfo.filter((r) => r.team === 'demon').length;
+
+    const baseTable = {
+      5: { townsfolk: 3, outsider: 0, minion: 1, demon: 1 },
+      6: { townsfolk: 3, outsider: 1, minion: 1, demon: 1 },
+      7: { townsfolk: 5, outsider: 0, minion: 1, demon: 1 },
+      8: { townsfolk: 5, outsider: 1, minion: 1, demon: 1 },
+      9: { townsfolk: 5, outsider: 2, minion: 1, demon: 1 },
+      10: { townsfolk: 7, outsider: 0, minion: 2, demon: 1 },
+      11: { townsfolk: 7, outsider: 1, minion: 2, demon: 1 },
+      12: { townsfolk: 7, outsider: 2, minion: 2, demon: 1 },
+      13: { townsfolk: 9, outsider: 0, minion: 3, demon: 1 },
+      14: { townsfolk: 9, outsider: 1, minion: 3, demon: 1 },
+      15: { townsfolk: 9, outsider: 2, minion: 3, demon: 1 },
+    };
+    const b = baseTable[playerCount] || baseTable[8];
+    const hasBaron = bagRoles.includes('baron');
+    const targetOut = b.outsider + (hasBaron ? 2 : 0);
+    const targetTF = Math.max(0, b.townsfolk - (hasBaron ? 2 : 0));
+    return (
+      bagRoles.length === Number(playerCount) &&
+      selTF === targetTF &&
+      selOut === targetOut &&
+      selMin === b.minion &&
+      selDem === b.demon
+    );
+  }, [bagRoles, playerCount, getRoleInfo]);
+
   const handleConfirmFinish = () => {
     onFinishGame({
       winner: finishWinner,
@@ -60,7 +113,7 @@ export default function GamesView({
     });
     setShowFinishModal(false);
     setFinishNotes('');
-    setActiveSubSection('history');
+    setSubSection('history');
   };
 
   const handleExportHistory = () => {
@@ -80,9 +133,9 @@ export default function GamesView({
       <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center justify-between sticky top-[53px] md:top-[89px] z-20">
         <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
           <button
-            onClick={() => setActiveSubSection('live')}
+            onClick={() => setSubSection('live')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeSubSection === 'live'
+              currentSubSection === 'live'
                 ? 'bg-amber-500 text-zinc-950 shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
@@ -91,9 +144,9 @@ export default function GamesView({
             <span>Live Grimoire</span>
           </button>
           <button
-            onClick={() => setActiveSubSection('history')}
+            onClick={() => setSubSection('history')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              activeSubSection === 'history'
+              currentSubSection === 'history'
                 ? 'bg-amber-500 text-zinc-950 shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
@@ -103,7 +156,7 @@ export default function GamesView({
           </button>
         </div>
 
-        {activeSubSection === 'live' && (
+        {currentSubSection === 'live' && (
           <div className="flex items-center gap-2">
             {onOpenMessages && (
               <button
@@ -137,35 +190,51 @@ export default function GamesView({
       </div>
 
       {/* MODE 1: LIVE GRIMOIRE */}
-      {activeSubSection === 'live' && (
+      {currentSubSection === 'live' && (
         <div className="flex-1 flex flex-col">
           {/* Sub-Tabs: 1. Bag | 2. Table Circle | 3. Prompts */}
           <div className="grid grid-cols-3 bg-zinc-900/90 border-b border-zinc-800 text-xs sm:text-sm font-semibold sticky top-[95px] md:top-[131px] z-10 backdrop-blur-sm">
             <button
-              onClick={() => setActiveLiveTab('bag')}
-              className={`py-2.5 border-b-2 transition-all ${
-                activeLiveTab === 'bag'
+              onClick={() => setLiveTab('bag')}
+              className={`py-2.5 border-b-2 transition-all flex items-center justify-center gap-1.5 ${
+                currentLiveTab === 'bag'
                   ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              1. Bag ({bagRoles.length})
+              <span>1. Bag</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  isBalanced
+                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/50'
+                    : 'bg-zinc-800 text-zinc-300'
+                }`}
+              >
+                {bagRoles.length}/{playerCount}
+              </span>
             </button>
+
             <button
-              onClick={() => setActiveLiveTab('table')}
+              onClick={() => setLiveTab('table')}
               className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
-                activeLiveTab === 'table'
+                currentLiveTab === 'table'
                   ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
               <span>2. Table Circle</span>
               <span>⭕</span>
+              {physicalTokensInBag.length > 0 && (
+                <span className="text-[9px] px-1 rounded font-bold bg-zinc-800 text-zinc-300">
+                  {usedTokens.length}/{physicalTokensInBag.length}
+                </span>
+              )}
             </button>
+
             <button
-              onClick={() => setActiveLiveTab('night')}
+              onClick={() => setLiveTab('night')}
               className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
-                activeLiveTab === 'night'
+                currentLiveTab === 'night'
                   ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
@@ -176,7 +245,7 @@ export default function GamesView({
           </div>
 
           {/* TAB 1: BAG SETUP */}
-          {activeLiveTab === 'bag' && (
+          {currentLiveTab === 'bag' && (
             <main className="p-4 space-y-5 max-w-lg mx-auto w-full flex-1">
               {/* Player Count */}
               <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
@@ -206,12 +275,14 @@ export default function GamesView({
                 </div>
               </section>
 
-              {/* Good vs Evil Balance Formula */}
+              {/* Good vs Evil Balance Formula & Diagnostic Feedback */}
               <RoleBalanceTracker
                 playerCount={playerCount}
                 bagRoles={bagRoles}
                 getRoleInfo={getRoleInfo}
                 onToggleRole={onToggleRoleInBag}
+                scriptRoles={scriptRoles}
+                onSetBagRoles={onSetBagRoles}
               />
 
               {/* Drunk Disguise Picker */}
@@ -276,12 +347,87 @@ export default function GamesView({
                   </section>
                 );
               })}
+
+              {/* Bridge Button: Confirm Bag & Proceed to Table */}
+              <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 sticky bottom-14 md:bottom-2 z-10 backdrop-blur-md">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{isBalanced ? '✨' : '🎒'}</span>
+                    <span className="text-xs font-bold text-zinc-100">
+                      {isBalanced ? 'Bag is Balanced & Ready!' : `${bagRoles.length}/${playerCount} Tokens in Bag`}
+                    </span>
+                    {isBalanced && (
+                      <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                        Ready
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    {isBalanced
+                      ? 'Pass the bag to players, then seat them at the table.'
+                      : 'You can proceed to the table anytime (Storyteller discretion per ADR-0007).'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLiveTab('table')}
+                  className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
+                    isBalanced
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-emerald-950/50'
+                      : 'bg-amber-500 hover:bg-amber-400 text-zinc-950'
+                  }`}
+                >
+                  <span>Proceed to Table Circle</span>
+                  <span>⭕ ➔</span>
+                </button>
+              </div>
             </main>
           )}
 
           {/* TAB 2: TABLE CIRCLE */}
-          {activeLiveTab === 'table' && (
+          {currentLiveTab === 'table' && (
             <main className="p-4 max-w-lg mx-auto w-full flex-1">
+              {/* Unassigned Tokens in Bag Helper Banner */}
+              {physicalTokensInBag.length > 0 && (
+                <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 mb-3 text-xs shadow-md">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🎒</span>
+                      <span className="font-bold text-zinc-200">
+                        Bag Seating: <strong className="text-amber-400">{usedTokens.length}</strong> of {physicalTokensInBag.length} seated
+                      </span>
+                    </div>
+                    {unassignedTokens.length === 0 ? (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                        ✓ All bag tokens seated
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                        {unassignedTokens.length} unassigned
+                      </span>
+                    )}
+                  </div>
+
+                  {unassignedTokens.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-zinc-800/80 items-center">
+                      <span className="text-[10px] text-zinc-400 uppercase font-semibold">Still in bag:</span>
+                      {unassignedTokens.map((tid) => {
+                        const rInfo = getRoleInfo(tid);
+                        return (
+                          <span
+                            key={tid}
+                            className="text-[11px] bg-zinc-950 text-zinc-200 px-2 py-0.5 rounded-lg border border-zinc-700 flex items-center gap-1 shadow-sm"
+                          >
+                            <span>{rInfo?.icon || '✦'}</span>
+                            <span>{rInfo?.name || tid}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <GrimoireCircle
                 seats={seats}
                 drunkDisguise={drunkDisguise}
@@ -306,7 +452,7 @@ export default function GamesView({
           )}
 
           {/* TAB 3: PROMPTS */}
-          {activeLiveTab === 'night' && (
+          {currentLiveTab === 'night' && (
             <NightFlashcards
               scriptRoles={scriptRoles}
               bagRoles={bagRoles}
@@ -319,7 +465,7 @@ export default function GamesView({
       )}
 
       {/* MODE 2: HISTORY OF GAMES */}
-      {activeSubSection === 'history' && (
+      {currentSubSection === 'history' && (
         <main className="p-4 sm:p-6 max-w-2xl mx-auto w-full space-y-4 flex-1">
           <div className="flex items-center justify-between">
             <div>
@@ -429,7 +575,7 @@ export default function GamesView({
                 When you finish a game in the Live Grimoire, tap "Finish Game" to log the winning team, final table layout, and notes here.
               </p>
               <button
-                onClick={() => setActiveSubSection('live')}
+                onClick={() => setSubSection('live')}
                 className="px-4 py-2 bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs"
               >
                 Go to Live Grimoire ➔

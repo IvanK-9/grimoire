@@ -15,12 +15,15 @@ const PLAYER_COUNT_TABLE = {
 };
 
 export default function RoleBalanceTracker({
-  playerCount,
-  bagRoles,
+  playerCount = 8,
+  bagRoles = [],
   getRoleInfo,
   onToggleRole,
+  scriptRoles = [],
+  onSetBagRoles,
 }) {
-  const base = PLAYER_COUNT_TABLE[playerCount] || PLAYER_COUNT_TABLE[8];
+  const numericCount = Number(playerCount) || 8;
+  const base = PLAYER_COUNT_TABLE[numericCount] || PLAYER_COUNT_TABLE[8];
   const hasBaron = bagRoles.includes('baron');
 
   // Official Baron modifier: +2 Outsiders, -2 Townsfolk
@@ -32,7 +35,7 @@ export default function RoleBalanceTracker({
   const targetGood = targetTownsfolk + targetOutsiders;
   const targetEvil = targetMinions + targetDemons;
 
-  const rolesWithInfo = bagRoles.map(getRoleInfo);
+  const rolesWithInfo = bagRoles.map(getRoleInfo).filter(Boolean);
   const selTownsfolk = rolesWithInfo.filter((r) => r.team === 'townsfolk');
   const selOutsiders = rolesWithInfo.filter((r) => r.team === 'outsider');
   const selMinions = rolesWithInfo.filter((r) => r.team === 'minion');
@@ -44,11 +47,60 @@ export default function RoleBalanceTracker({
   const totalSelected = bagRoles.length;
 
   const isBalanced =
-    totalSelected === playerCount &&
+    totalSelected === numericCount &&
     selTownsfolk.length === targetTownsfolk &&
     selOutsiders.length === targetOutsiders &&
     selMinions.length === targetMinions &&
     selDemons.length === targetDemons;
+
+  // Live balance discrepancies (diagnostics)
+  const discrepancies = [];
+  if (selTownsfolk.length < targetTownsfolk) {
+    discrepancies.push({ label: `+${targetTownsfolk - selTownsfolk.length} Townsfolk`, type: 'need', color: 'bg-blue-950/80 text-blue-300 border-blue-500/50' });
+  } else if (selTownsfolk.length > targetTownsfolk) {
+    discrepancies.push({ label: `-${selTownsfolk.length - targetTownsfolk} Townsfolk`, type: 'excess', color: 'bg-rose-950/80 text-rose-300 border-rose-500/50' });
+  }
+
+  if (selOutsiders.length < targetOutsiders) {
+    discrepancies.push({ label: `+${targetOutsiders - selOutsiders.length} Outsider`, type: 'need', color: 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50' });
+  } else if (selOutsiders.length > targetOutsiders) {
+    discrepancies.push({ label: `-${selOutsiders.length - targetOutsiders} Outsider`, type: 'excess', color: 'bg-rose-950/80 text-rose-300 border-rose-500/50' });
+  }
+
+  if (selMinions.length < targetMinions) {
+    discrepancies.push({ label: `+${targetMinions - selMinions.length} Minion`, type: 'need', color: 'bg-orange-950/80 text-orange-300 border-orange-500/50' });
+  } else if (selMinions.length > targetMinions) {
+    discrepancies.push({ label: `-${selMinions.length - targetMinions} Minion`, type: 'excess', color: 'bg-rose-950/80 text-rose-300 border-rose-500/50' });
+  }
+
+  if (selDemons.length < targetDemons) {
+    discrepancies.push({ label: `+${targetDemons - selDemons.length} Demon`, type: 'need', color: 'bg-red-950/80 text-red-300 border-red-500/50' });
+  } else if (selDemons.length > targetDemons) {
+    discrepancies.push({ label: `-${selDemons.length - targetDemons} Demon`, type: 'excess', color: 'bg-rose-950/80 text-rose-300 border-rose-500/50' });
+  }
+
+  // 1-Click Auto-Fill Balanced Bag
+  const handleAutoFillBag = () => {
+    if (!scriptRoles?.length || !onSetBagRoles) return;
+    const scriptInfo = scriptRoles.map(getRoleInfo).filter(Boolean);
+
+    const tfPool = scriptInfo.filter((r) => r.team === 'townsfolk');
+    const outPool = scriptInfo.filter((r) => r.team === 'outsider');
+    const minPool = scriptInfo.filter((r) => r.team === 'minion');
+    const demPool = scriptInfo.filter((r) => r.team === 'demon');
+
+    const chosen = [
+      ...tfPool.slice(0, targetTownsfolk).map((r) => r.id),
+      ...outPool.slice(0, targetOutsiders).map((r) => r.id),
+      ...minPool.slice(0, targetMinions).map((r) => r.id),
+      ...demPool.slice(0, targetDemons).map((r) => r.id),
+    ];
+    onSetBagRoles(chosen);
+  };
+
+  const handleClearBag = () => {
+    if (onSetBagRoles) onSetBagRoles([]);
+  };
 
   const renderSlots = (selected, target, colors, label) => {
     const slotCount = Math.max(target, selected.length);
@@ -87,10 +139,10 @@ export default function RoleBalanceTracker({
   return (
     <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 space-y-3 shadow-lg">
       {/* Header with High-Level Formula and Status Pill */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2.5 border-b border-zinc-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-zinc-800/80">
         <div>
-          <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-            Official Balance Breakdown:
+          <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+            <span>Official Balance Breakdown ({numericCount}p):</span>
           </div>
           <div className="text-xs font-semibold text-zinc-200 mt-0.5">
             <span className="text-blue-400 font-bold">{targetGood} Good</span>
@@ -102,20 +154,93 @@ export default function RoleBalanceTracker({
           </div>
         </div>
 
+        {/* Status Badge */}
         <div className="flex items-center gap-1.5 self-start sm:self-auto">
-          <span
-            className={`text-xs font-bold px-2.5 py-0.5 rounded-full border transition-all ${
-              isBalanced
-                ? 'bg-emerald-950/80 border-emerald-500/70 text-emerald-300 shadow-sm shadow-emerald-950'
-                : totalSelected === playerCount
-                ? 'bg-amber-950/80 border-amber-500/60 text-amber-300'
-                : totalSelected > playerCount
-                ? 'bg-rose-950/80 border-rose-500/60 text-rose-300'
-                : 'bg-zinc-800 border-zinc-700 text-zinc-300'
-            }`}
-          >
-            {isBalanced ? '✨ Balanced' : `${totalSelected}/${playerCount} in bag`}
-          </span>
+          {isBalanced ? (
+            <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950/60 flex items-center gap-1 animate-pulse">
+              <span>✨</span>
+              <span>BALANCED ({numericCount}p)</span>
+            </span>
+          ) : totalSelected === numericCount ? (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-300">
+              ⚡ {totalSelected}/{numericCount} in bag (Custom Setup)
+            </span>
+          ) : totalSelected > numericCount ? (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/60 text-rose-300">
+              ⚠️ {totalSelected}/{numericCount} (+{totalSelected - numericCount} over)
+            </span>
+          ) : (
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+              {totalSelected}/{numericCount} in bag
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Discrepancies Diagnostic Alert if not balanced */}
+      {!isBalanced && (
+        <div className="bg-zinc-950/70 border border-zinc-800 rounded-xl p-2.5 space-y-1.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+              {totalSelected === 0 ? 'How to balance bag:' : 'Adjust bag to reach ✨ Balanced:'}
+            </span>
+            {scriptRoles?.length > 0 && onSetBagRoles && (
+              <button
+                type="button"
+                onClick={handleAutoFillBag}
+                className="text-[11px] font-bold text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1"
+                title="Automatically select recommended roles for this player count"
+              >
+                <span>⚡ Auto-fill bag</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {discrepancies.length > 0 ? (
+              discrepancies.map((d, i) => (
+                <span
+                  key={i}
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${d.color}`}
+                >
+                  {d.label}
+                </span>
+              ))
+            ) : (
+              <span className="text-zinc-500 text-[11px]">
+                Select roles below to fill your bag slots.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Action Bar (Auto-fill / Clear) */}
+      <div className="flex items-center justify-between text-xs pt-0.5">
+        <span className="text-zinc-400 text-[11px]">
+          Click roles below to add or remove from bag.
+        </span>
+        <div className="flex items-center gap-2">
+          {scriptRoles?.length > 0 && onSetBagRoles && (
+            <button
+              type="button"
+              onClick={handleAutoFillBag}
+              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-amber-300 font-semibold border border-zinc-700 text-[11px] transition-colors flex items-center gap-1 shadow-sm"
+            >
+              <span>⚡</span>
+              <span>Auto-Fill Balanced Bag</span>
+            </button>
+          )}
+          {bagRoles.length > 0 && onSetBagRoles && (
+            <button
+              type="button"
+              onClick={handleClearBag}
+              className="text-[11px] text-zinc-500 hover:text-rose-400 px-1.5 py-1"
+              title="Clear all roles from bag"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
