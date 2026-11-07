@@ -11,6 +11,15 @@ import { FullscreenFlashcard } from './components/NightFlashcards';
 import { resolveRoleInfo } from './data/roles';
 import { SCRIPT_PRESETS } from './data/scripts';
 import { DEFAULT_FAVORITE_IDS } from './data/messages';
+import {
+  APP_VERSION,
+  GIT_HASH,
+  BUILD_TIME,
+  GITHUB_REPO,
+  GITLAB_REPO,
+  GITHUB_COMMIT_URL,
+  RELEASE_HIGHLIGHTS,
+} from './config/version';
 
 const TEAM_STYLES = {
   townsfolk: { label: 'Townsfolk', border: 'border-blue-500', bg: 'bg-blue-950/60', text: 'text-blue-300', badge: 'bg-blue-600' },
@@ -89,6 +98,7 @@ export default function App() {
   // Modals
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
 
   // Sanitize seats on load or count change
   useEffect(() => {
@@ -431,6 +441,130 @@ export default function App() {
         />
       )}
 
+      {/* About & Version Info Modal */}
+      {showVersionModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setShowVersionModal(false)}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scaleUp text-zinc-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/70">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🕯️</span>
+                <div>
+                  <h3 className="font-bold text-zinc-100 text-base leading-tight flex items-center gap-2">
+                    <span>BotC Pocket Grimoire</span>
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                      v{APP_VERSION}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-zinc-400">Offline Storyteller Assistant</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVersionModal(false)}
+                className="text-zinc-400 hover:text-zinc-100 text-lg p-1"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4 text-xs">
+              {/* Build Meta Grid */}
+              <div className="grid grid-cols-2 gap-2 bg-zinc-950 p-3 rounded-xl border border-zinc-800 font-mono">
+                <div>
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Commit</span>
+                  <a
+                    href={GITHUB_COMMIT_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:underline font-bold text-xs inline-flex items-center gap-1"
+                  >
+                    <span>{GIT_HASH}</span>
+                    <span className="text-[10px]">↗</span>
+                  </a>
+                </div>
+                <div>
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">PWA Offline</span>
+                  <span className="text-emerald-400 font-bold text-xs flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Cached / Ready
+                  </span>
+                </div>
+                {BUILD_TIME && (
+                  <div className="col-span-2 pt-2 border-t border-zinc-800/80">
+                    <span className="text-[10px] text-zinc-400 uppercase tracking-wider block">Built At</span>
+                    <span className="text-zinc-300 text-[11px] font-sans">
+                      {new Date(BUILD_TIME).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* What's in this version */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>Release Highlights (v{APP_VERSION}):</span>
+                </span>
+                <ul className="space-y-1.5 bg-zinc-950/60 p-3 rounded-xl border border-zinc-800 text-zinc-300">
+                  {RELEASE_HIGHLIGHTS.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Repositories */}
+              <div className="pt-2 border-t border-zinc-800 flex items-center justify-between text-zinc-400">
+                <span>Repositories:</span>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={GITHUB_REPO}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1"
+                  >
+                    <span>GitHub</span>
+                    <span className="text-[9px]">↗</span>
+                  </a>
+                  <span>•</span>
+                  <a
+                    href={GITLAB_REPO}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1"
+                  >
+                    <span>GitLab</span>
+                    <span className="text-[9px]">↗</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 bg-zinc-950 border-t border-zinc-800 text-center">
+              <button
+                type="button"
+                onClick={() => setShowVersionModal(false)}
+                className="w-full py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-bold rounded-xl transition-colors text-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Persistent Global Header */}
       <header className="sticky top-0 z-30 bg-zinc-900 border-b border-zinc-800 px-4 py-2.5 flex items-center justify-between shadow-md pt-[max(0.625rem,env(safe-area-inset-top))]">
         <div
@@ -439,9 +573,22 @@ export default function App() {
         >
           <span className="text-xl">🕯️</span>
           <div>
-            <h1 className="text-sm sm:text-base font-bold text-amber-400 leading-tight group-hover:text-amber-300 transition-colors">
-              BotC Pocket Grimoire
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold text-amber-400 leading-tight group-hover:text-amber-300 transition-colors">
+                BotC Pocket Grimoire
+              </h1>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVersionModal(true);
+                }}
+                title={`Version ${APP_VERSION} (${GIT_HASH}) - Click for build info`}
+                className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-800/90 text-amber-400/90 border border-zinc-700 hover:border-amber-500/60 hover:text-amber-300 transition-colors cursor-pointer"
+              >
+                v{APP_VERSION}
+              </button>
+            </div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-[11px] text-zinc-400">Script:</span>
               <button
