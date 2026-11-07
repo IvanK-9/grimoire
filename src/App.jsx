@@ -86,6 +86,7 @@ export default function App() {
   const [scriptRoles, setScriptRoles] = useLocalStorage('botc_script_roles', SCRIPT_PRESETS.trouble_brewing.roles);
   const [bagRoles, setBagRoles] = useLocalStorage('botc_bag_roles', []);
   const [drunkDisguise, setDrunkDisguise] = useLocalStorage('botc_drunk_disguise', '');
+  const [demonBluffs, setDemonBluffs] = useLocalStorage('botc_demon_bluffs', []);
   const [seats, setSeats] = useLocalStorage('botc_seats', []);
   const [fullscreenCard, setFullscreenCard] = useState(null);
 
@@ -135,7 +136,7 @@ export default function App() {
   );
 
   const physicalTokensInBag = useMemo(
-    () => bagRoles.map((r) => (r === 'drunk' ? drunkDisguise : r)).filter(Boolean),
+    () => bagRoles.map((r) => (r === 'drunk' ? (drunkDisguise || 'drunk') : r)),
     [bagRoles, drunkDisguise]
   );
 
@@ -143,7 +144,10 @@ export default function App() {
     setSeats((prev) =>
       prev.map((s, i) => {
         if (i !== idx) return s;
-        const isDrunkToken = Boolean(drunkDisguise && token === drunkDisguise);
+        const isDrunkToken = Boolean(
+          (drunkDisguise && token === drunkDisguise && bagRoles.includes('drunk')) ||
+          token === 'drunk'
+        );
         return {
           ...s,
           drawnToken: token,
@@ -303,6 +307,7 @@ export default function App() {
   const handleResetGame = () => {
     setBagRoles([]);
     setDrunkDisguise('');
+    setDemonBluffs([]);
     setSeats(sanitizeSeats([], playerCount));
   };
 
@@ -386,6 +391,7 @@ export default function App() {
     playerCount,
     bagRoles,
     drunkDisguise,
+    demonBluffs,
     seats,
   });
 
@@ -396,6 +402,7 @@ export default function App() {
     if (typeof json.playerCount === 'number') setPlayerCount(json.playerCount);
     if (Array.isArray(json.bagRoles)) setBagRoles(json.bagRoles);
     if (typeof json.drunkDisguise === 'string') setDrunkDisguise(json.drunkDisguise);
+    if (Array.isArray(json.demonBluffs)) setDemonBluffs(json.demonBluffs);
     if (Array.isArray(json.seats)) {
       setSeats(sanitizeSeats(json.seats, json.playerCount || json.seats.length));
     }
@@ -674,6 +681,8 @@ export default function App() {
           onSetBagRoles={setBagRoles}
           drunkDisguise={drunkDisguise}
           onSetDrunkDisguise={setDrunkDisguise}
+          demonBluffs={demonBluffs}
+          onSetDemonBluffs={setDemonBluffs}
           availableTownsfolkForDrunk={availableTownsfolkForDrunk}
           physicalTokensInBag={physicalTokensInBag}
           groupedScript={groupedScript}

@@ -40,46 +40,49 @@ export function FullscreenFlashcard({ card, onClose }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 text-center select-none cursor-pointer"
+      className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6 sm:p-10 text-center select-none cursor-pointer"
     >
       <button
         onClick={onClose}
-        className="absolute top-5 right-5 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700 rounded-full w-10 h-10 flex items-center justify-center text-sm font-bold"
+        className="absolute top-5 right-5 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-700 rounded-full w-12 h-12 flex items-center justify-center text-lg font-bold shadow-md"
+        aria-label="Close"
       >
         ✕
       </button>
 
       {card.subtitle && (
-        <p className="text-sm sm:text-base font-bold tracking-widest uppercase text-zinc-500 mb-3">
+        <p className="text-sm sm:text-lg font-bold tracking-widest uppercase text-zinc-400 mb-3">
           {card.subtitle}
         </p>
       )}
 
       {card.icon && (
-        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full flex items-center justify-center text-5xl sm:text-6xl mb-6 bg-zinc-900 border-2 border-zinc-800 shadow-2xl">
+        <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full flex items-center justify-center text-6xl sm:text-7xl mb-6 bg-zinc-900 border-2 border-zinc-700 shadow-2xl">
           {card.icon}
         </div>
       )}
 
-      <h1 className={`text-4xl sm:text-6xl md:text-7xl font-black tracking-wide leading-tight max-w-2xl ${styleClass}`}>
+      <h1 className={`text-5xl sm:text-7xl md:text-8xl font-black tracking-wide leading-tight max-w-3xl ${styleClass}`}>
         {card.title}
       </h1>
 
       {card.teamLabel && (
         <div className="mt-4">
-          <span className="text-xs uppercase font-bold tracking-widest px-3 py-1 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300">
+          <span className="text-xs sm:text-sm uppercase font-bold tracking-widest px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-200">
             {card.teamLabel}
           </span>
         </div>
       )}
 
       {card.description && (
-        <p className="mt-6 text-xs sm:text-sm text-zinc-400 max-w-md italic px-4">
-          "{card.description}"
-        </p>
+        <div className="mt-8 bg-zinc-950/90 border border-zinc-800 rounded-2xl p-5 max-w-xl shadow-xl">
+          <p className="text-base sm:text-xl md:text-2xl text-zinc-100 font-medium leading-relaxed">
+            "{card.description}"
+          </p>
+        </div>
       )}
 
-      <div className="absolute bottom-6 text-zinc-600 text-[11px] font-medium tracking-wider uppercase">
+      <div className="absolute bottom-6 text-zinc-500 text-xs font-semibold tracking-widest uppercase">
         Tap anywhere to dismiss
       </div>
     </div>
@@ -90,6 +93,7 @@ export default function NightFlashcards({
   scriptRoles,
   bagRoles,
   drunkDisguise,
+  demonBluffs = [],
   getRoleInfo,
   onShowCard,
 }) {
@@ -112,6 +116,61 @@ export default function NightFlashcards({
 
   return (
     <main className="p-4 space-y-6 max-w-lg mx-auto pb-28">
+      {/* 3 Demon Bluffs Section */}
+      {demonBluffs?.length > 0 && (
+        <section className="bg-gradient-to-r from-red-950/50 to-zinc-900 border border-red-900/60 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold text-red-300 text-xs">
+              <span className="text-base">🃏</span>
+              <span>Demon Bluffs (3 Out-of-play Good Roles)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const bluffNames = demonBluffs.map((id) => getRoleInfo(id)?.name || id).join(' • ');
+                onShowCard({
+                  title: 'DEMON BLUFFS',
+                  subtitle: 'These roles are NOT in play',
+                  description: bluffNames,
+                  color: 'red',
+                });
+              }}
+              className="text-[10px] font-bold bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-700/80 px-2.5 py-1 rounded-lg transition-colors shadow-sm"
+            >
+              Show All 3 ➔
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {demonBluffs.map((bid) => {
+              const r = getRoleInfo(bid);
+              if (!r) return null;
+              return (
+                <button
+                  key={bid}
+                  type="button"
+                  onClick={() =>
+                    onShowCard({
+                      title: r.name,
+                      subtitle: 'Demon Bluff (Not in Play)',
+                      icon: r.icon,
+                      description: r.ability,
+                      teamLabel: r.team,
+                      color: r.team === 'outsider' ? 'cyan' : 'townsfolk',
+                    })
+                  }
+                  className="bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-700/80 hover:border-red-500/60 rounded-xl p-2.5 text-center transition-all active:scale-95 shadow-sm"
+                  title={`Show ${r.name} card`}
+                >
+                  <div className="text-2xl mb-1">{r.icon}</div>
+                  <div className="text-xs font-bold text-zinc-100 truncate">{r.name}</div>
+                  <div className="text-[10px] text-zinc-400 capitalize">{r.team}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Custom Text Input Bar */}
       <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-3.5 space-y-2">
         <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">

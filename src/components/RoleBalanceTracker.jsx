@@ -21,6 +21,10 @@ export default function RoleBalanceTracker({
   onToggleRole,
   scriptRoles = [],
   onSetBagRoles,
+  drunkDisguise = '',
+  onSetDrunkDisguise,
+  availableTownsfolkForDrunk = [],
+  onSelectTeam,
 }) {
   const numericCount = Number(playerCount) || 8;
   const base = PLAYER_COUNT_TABLE[numericCount] || PLAYER_COUNT_TABLE[8];
@@ -89,20 +93,35 @@ export default function RoleBalanceTracker({
     const minPool = scriptInfo.filter((r) => r.team === 'minion');
     const demPool = scriptInfo.filter((r) => r.team === 'demon');
 
+    const chosenTf = tfPool.slice(0, targetTownsfolk);
+    const chosenOut = outPool.slice(0, targetOutsiders);
+    const chosenMin = minPool.slice(0, targetMinions);
+    const chosenDem = demPool.slice(0, targetDemons);
+
     const chosen = [
-      ...tfPool.slice(0, targetTownsfolk).map((r) => r.id),
-      ...outPool.slice(0, targetOutsiders).map((r) => r.id),
-      ...minPool.slice(0, targetMinions).map((r) => r.id),
-      ...demPool.slice(0, targetDemons).map((r) => r.id),
+      ...chosenTf.map((r) => r.id),
+      ...chosenOut.map((r) => r.id),
+      ...chosenMin.map((r) => r.id),
+      ...chosenDem.map((r) => r.id),
     ];
     onSetBagRoles(chosen);
+
+    // If Drunk is in chosen Outsiders, automatically assign an unused Townsfolk disguise
+    if (chosen.includes('drunk') && onSetDrunkDisguise) {
+      const chosenTfIds = chosenTf.map((r) => r.id);
+      const unusedTf = tfPool.find((tf) => !chosenTfIds.includes(tf.id));
+      if (unusedTf) {
+        onSetDrunkDisguise(unusedTf.id);
+      }
+    }
   };
 
   const handleClearBag = () => {
     if (onSetBagRoles) onSetBagRoles([]);
+    if (onSetDrunkDisguise) onSetDrunkDisguise('');
   };
 
-  const renderSlots = (selected, target, colors, label) => {
+  const renderSlots = (selected, target, colors, label, teamKey) => {
     const slotCount = Math.max(target, selected.length);
     const slots = [];
 
@@ -124,12 +143,15 @@ export default function RoleBalanceTracker({
         );
       } else {
         slots.push(
-          <div
+          <button
             key={`empty-${i}`}
-            className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[11px] border border-dashed ${colors.emptyBorder} ${colors.emptyBg} ${colors.emptyText}`}
+            type="button"
+            onClick={() => onSelectTeam && onSelectTeam(teamKey)}
+            title={`Tap to jump to ${label} selection`}
+            className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-[11px] border border-dashed ${colors.emptyBorder} ${colors.emptyBg} ${colors.emptyText} hover:brightness-125 cursor-pointer active:scale-95 transition-all`}
           >
             <span>+ {label}</span>
-          </div>
+          </button>
         );
       }
     }
@@ -260,6 +282,54 @@ export default function RoleBalanceTracker({
         </div>
       )}
 
+      {/* Drunk Disguise Banner */}
+      {bagRoles.includes('drunk') && (
+        <div
+          className={`rounded-xl p-3 border transition-all ${
+            drunkDisguise
+              ? 'bg-amber-950/40 border-amber-500/50'
+              : 'bg-amber-950/80 border-amber-400 shadow-md animate-pulse'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">🍺</span>
+              <div>
+                <div className="font-bold text-amber-300 text-xs flex items-center gap-1.5 flex-wrap">
+                  <span>Drunk Townsfolk Disguise:</span>
+                  {drunkDisguise ? (
+                    <span className="text-white font-mono bg-amber-900/80 px-2 py-0.5 rounded-lg border border-amber-500 font-bold">
+                      {getRoleInfo(drunkDisguise)?.name || drunkDisguise}
+                    </span>
+                  ) : (
+                    <span className="text-red-300 font-bold bg-red-950/90 px-2 py-0.5 rounded-lg border border-red-500">
+                      ⚠️ Disguise needed for bag!
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-zinc-400 mt-0.5">
+                  The Drunk thinks they are this Townsfolk. This token physically goes into the bag.
+                </p>
+              </div>
+            </div>
+            {onSetDrunkDisguise && (
+              <select
+                value={drunkDisguise}
+                onChange={(e) => onSetDrunkDisguise(e.target.value)}
+                className="bg-zinc-900 border border-amber-500/60 rounded-xl px-3 py-1.5 text-xs text-zinc-100 font-semibold focus:outline-none focus:border-amber-400 shrink-0"
+              >
+                <option value="">-- Select Townsfolk --</option>
+                {availableTownsfolkForDrunk.map((tf) => (
+                  <option key={tf.id} value={tf.id}>
+                    {tf.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Two Team Cards: Good vs Evil */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {/* GOOD TEAM CARD */}
@@ -299,7 +369,8 @@ export default function RoleBalanceTracker({
                   emptyBg: 'bg-blue-950/20',
                   emptyText: 'text-blue-400/50',
                 },
-                'Townsfolk'
+                'Townsfolk',
+                'townsfolk'
               )}
             </div>
           </div>
@@ -323,7 +394,8 @@ export default function RoleBalanceTracker({
                   emptyBg: 'bg-cyan-950/20',
                   emptyText: 'text-cyan-400/50',
                 },
-                'Outsider'
+                'Outsider',
+                'outsider'
               )}
             </div>
           </div>
@@ -366,7 +438,8 @@ export default function RoleBalanceTracker({
                   emptyBg: 'bg-orange-950/20',
                   emptyText: 'text-orange-400/50',
                 },
-                'Minion'
+                'Minion',
+                'minion'
               )}
             </div>
           </div>
@@ -390,7 +463,8 @@ export default function RoleBalanceTracker({
                   emptyBg: 'bg-red-950/20',
                   emptyText: 'text-red-400/50',
                 },
-                'Demon'
+                'Demon',
+                'demon'
               )}
             </div>
           </div>

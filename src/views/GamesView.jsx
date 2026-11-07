@@ -14,6 +14,8 @@ export default function GamesView({
   onSetBagRoles,
   drunkDisguise,
   onSetDrunkDisguise,
+  demonBluffs = [],
+  onSetDemonBluffs,
   availableTownsfolkForDrunk,
   physicalTokensInBag,
   groupedScript,
@@ -61,7 +63,28 @@ export default function GamesView({
   // Snapshot Viewer Modal
   const [viewingSnapshot, setViewingSnapshot] = useState(null);
 
-  const isDrunkInBag = bagRoles.includes('drunk');
+  // Demon Bluffs Modal State
+  const [showBluffsModal, setShowBluffsModal] = useState(false);
+
+  // Available good roles not in bag for demon bluffs
+  const availableGoodRolesForBluffs = useMemo(() => {
+    return scriptRoles
+      .map(getRoleInfo)
+      .filter((r) => r && (r.team === 'townsfolk' || r.team === 'outsider') && !bagRoles.includes(r.id));
+  }, [scriptRoles, bagRoles, getRoleInfo]);
+
+  const handleAutoPickBluffs = () => {
+    if (!availableGoodRolesForBluffs.length || !onSetDemonBluffs) return;
+    const shuffled = [...availableGoodRolesForBluffs].sort(() => 0.5 - Math.random());
+    onSetDemonBluffs(shuffled.slice(0, 3).map((r) => r.id));
+  };
+
+  const handleSelectTeam = (teamKey) => {
+    const el = document.getElementById(`team-section-${teamKey}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   // Track unassigned tokens between bag and seats
   const usedTokens = useMemo(() => {
@@ -283,36 +306,18 @@ export default function GamesView({
                 onToggleRole={onToggleRoleInBag}
                 scriptRoles={scriptRoles}
                 onSetBagRoles={onSetBagRoles}
+                drunkDisguise={drunkDisguise}
+                onSetDrunkDisguise={onSetDrunkDisguise}
+                availableTownsfolkForDrunk={availableTownsfolkForDrunk}
+                onSelectTeam={handleSelectTeam}
               />
-
-              {/* Drunk Disguise Picker */}
-              {isDrunkInBag && (
-                <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-3 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-bold text-amber-300">
-                    <span>🍺 Drunk Townsfolk Disguise:</span>
-                    <span className="text-[10px] text-zinc-400 font-normal">Token in bag</span>
-                  </div>
-                  <select
-                    value={drunkDisguise}
-                    onChange={(e) => onSetDrunkDisguise(e.target.value)}
-                    className="w-full bg-zinc-900 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="">-- Choose unused Townsfolk disguise --</option>
-                    {availableTownsfolkForDrunk.map((tf) => (
-                      <option key={tf.id} value={tf.id}>
-                        {tf.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
 
               {/* Script Roles Grid */}
               {Object.entries(groupedScript).map(([teamKey, roles]) => {
                 if (!roles.length) return null;
                 const st = TEAM_STYLES[teamKey] || TEAM_STYLES.unknown;
                 return (
-                  <section key={teamKey} className="space-y-2">
+                  <section key={teamKey} id={`team-section-${teamKey}`} className="space-y-2 scroll-mt-28">
                     <h2 className={`text-xs font-bold uppercase ${st.text}`}>{st.label}</h2>
                     <div className="grid grid-cols-2 gap-2">
                       {roles.map((r) => {
@@ -349,29 +354,11 @@ export default function GamesView({
               })}
 
               {/* Bridge Button: Confirm Bag & Proceed to Table */}
-              <div className="bg-zinc-900/95 border border-zinc-800 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 sticky bottom-14 md:bottom-2 z-10 backdrop-blur-md">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{isBalanced ? '✨' : '🎒'}</span>
-                    <span className="text-xs font-bold text-zinc-100">
-                      {isBalanced ? 'Bag is Balanced & Ready!' : `${bagRoles.length}/${playerCount} Tokens in Bag`}
-                    </span>
-                    {isBalanced && (
-                      <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                        Ready
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-zinc-400 mt-0.5">
-                    {isBalanced
-                      ? 'Pass the bag to players, then seat them at the table.'
-                      : 'You can proceed to the table anytime (Storyteller discretion per ADR-0007).'}
-                  </p>
-                </div>
+              <div className="pt-2 pb-6 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setLiveTab('table')}
-                  className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
+                  className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
                     isBalanced
                       ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-emerald-950/50'
                       : 'bg-amber-500 hover:bg-amber-400 text-zinc-950'
@@ -428,6 +415,91 @@ export default function GamesView({
                 </div>
               )}
 
+              {/* Demon Bluffs Banner */}
+              <div className="bg-gradient-to-r from-red-950/40 to-zinc-900 border border-red-950/80 rounded-2xl p-3 mb-3 text-xs shadow-md">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-bold text-red-300">
+                    <span className="text-base">🃏</span>
+                    <span>Demon Bluffs (3 not-in-play Good roles):</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {availableGoodRolesForBluffs.length >= 3 && onSetDemonBluffs && (
+                      <button
+                        type="button"
+                        onClick={handleAutoPickBluffs}
+                        className="text-[10px] font-bold bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-700/60 px-2 py-0.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                        title="Randomly pick 3 out-of-play Good roles"
+                      >
+                        <span>🎲</span>
+                        <span>Auto-Roll</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowBluffsModal(true)}
+                      className="text-[10px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded-lg transition-colors"
+                    >
+                      {demonBluffs.length === 3 ? 'Edit ▾' : '+ Select 3'}
+                    </button>
+                  </div>
+                </div>
+
+                {demonBluffs.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-zinc-800/80 items-center justify-between">
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {demonBluffs.map((bid) => {
+                        const r = getRoleInfo(bid);
+                        if (!r) return null;
+                        return (
+                          <button
+                            key={bid}
+                            type="button"
+                            onClick={() =>
+                              onShowToPlayer &&
+                              onShowToPlayer({
+                                title: r.name,
+                                subtitle: 'Demon Bluff (Not in play)',
+                                icon: r.icon,
+                                description: r.ability,
+                                teamLabel: r.team,
+                                color: r.team === 'outsider' ? 'cyan' : 'townsfolk',
+                              })
+                            }
+                            title="Click to show role card in fullscreen"
+                            className="text-[11px] font-bold bg-zinc-950 hover:bg-zinc-900 text-zinc-100 px-2.5 py-1 rounded-lg border border-red-900/60 flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                          >
+                            <span>{r.icon}</span>
+                            <span>{r.name}</span>
+                            <span className="text-[9px] text-zinc-500">↗</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {demonBluffs.length === 3 && onShowToPlayer && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const bluffNames = demonBluffs.map((id) => getRoleInfo(id)?.name || id).join(' • ');
+                          onShowToPlayer({
+                            title: 'DEMON BLUFFS',
+                            subtitle: 'These roles are NOT in play',
+                            description: bluffNames,
+                            color: 'red',
+                          });
+                        }}
+                        className="text-[10px] font-bold text-red-300 hover:text-red-200 hover:underline px-1 py-0.5"
+                      >
+                        Show All 3 ➔
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-zinc-400 mt-1.5 pt-1.5 border-t border-zinc-800/80">
+                    No bluffs chosen yet. Tap <strong>Auto-Roll 🎲</strong> to pick 3 good characters not in play for the Demon & Spy.
+                  </p>
+                )}
+              </div>
+
               <GrimoireCircle
                 seats={seats}
                 drunkDisguise={drunkDisguise}
@@ -457,6 +529,7 @@ export default function GamesView({
               scriptRoles={scriptRoles}
               bagRoles={bagRoles}
               drunkDisguise={drunkDisguise}
+              demonBluffs={demonBluffs}
               getRoleInfo={getRoleInfo}
               onShowCard={onShowToPlayer}
             />
@@ -762,6 +835,109 @@ export default function GamesView({
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-bold rounded-xl text-xs"
               >
                 Close Snapshot
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEMON BLUFFS SELECTOR MODAL */}
+      {showBluffsModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setShowBluffsModal(false)}
+        >
+          <div
+            className="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scaleUp text-zinc-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/70">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🃏</span>
+                <div>
+                  <h3 className="font-bold text-zinc-100 text-sm">Select 3 Demon Bluffs</h3>
+                  <p className="text-[11px] text-zinc-400">
+                    Good roles from this script NOT in play ({demonBluffs.length}/3 chosen)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBluffsModal(false)}
+                className="text-zinc-400 hover:text-zinc-100 text-lg p-1"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2">
+              {availableGoodRolesForBluffs.length === 0 ? (
+                <div className="text-center py-6 text-xs text-zinc-400">
+                  All good roles from the script are already in the bag!
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {availableGoodRolesForBluffs.map((r) => {
+                    const isSelected = demonBluffs.includes(r.id);
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => {
+                          if (!onSetDemonBluffs) return;
+                          if (isSelected) {
+                            onSetDemonBluffs(demonBluffs.filter((id) => id !== r.id));
+                          } else {
+                            if (demonBluffs.length < 3) {
+                              onSetDemonBluffs([...demonBluffs, r.id]);
+                            } else {
+                              // Replace first and add new
+                              onSetDemonBluffs([...demonBluffs.slice(1), r.id]);
+                            }
+                          }
+                        }}
+                        className={`text-left p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all active:scale-95 ${
+                          isSelected
+                            ? 'bg-red-950/80 border-red-500 text-red-100 shadow-sm'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span>{r.icon}</span>
+                          <span className="truncate">{r.name}</span>
+                        </div>
+                        {isSelected ? (
+                          <span className="text-[10px] bg-red-500 text-zinc-950 font-black px-1.5 py-0.5 rounded-full shrink-0">
+                            ✓
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-zinc-500 capitalize shrink-0">{r.team}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-2">
+              {availableGoodRolesForBluffs.length >= 3 && onSetDemonBluffs && (
+                <button
+                  type="button"
+                  onClick={handleAutoPickBluffs}
+                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-amber-300 font-bold text-xs flex items-center gap-1 border border-zinc-700"
+                >
+                  <span>🎲</span>
+                  <span>Auto-Roll 3</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowBluffsModal(false)}
+                className="ml-auto px-5 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
+              >
+                Done
               </button>
             </div>
           </div>
