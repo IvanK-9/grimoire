@@ -1,4 +1,22 @@
 import React, { useState, useMemo } from 'react';
+import {
+  History,
+  RotateCcw,
+  Flag,
+  MessageSquare,
+  ArrowRight,
+  CircleDot,
+  Moon,
+  Dices,
+  Sparkles,
+  Trophy,
+  Download,
+  Trash2,
+  X,
+  Eye,
+  ScrollText,
+  Check,
+} from 'lucide-react';
 import GrimoireCircle from '../components/GrimoireCircle';
 import RoleBalanceTracker from '../components/RoleBalanceTracker';
 import NightFlashcards from '../components/NightFlashcards';
@@ -39,7 +57,7 @@ export default function GamesView({
   handleAddTraveller,
   handleRemoveSeat,
   onShowToPlayer,
-  onOpenScriptModal,
+  _onOpenScriptModal,
   onOpenMessages,
   // History State
   gameHistory = [],
@@ -159,13 +177,13 @@ export default function GamesView({
     <div className="flex-1 flex flex-col select-none animate-fadeIn pb-20 md:pb-8">
       {/* Top Mode Bar: Live Grimoire vs History */}
       <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-2 flex items-center justify-between sticky top-[53px] md:top-[89px] z-20">
-        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+        <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
           <button
             onClick={() => setSubSection('live')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
               currentSubSection === 'live'
-                ? 'bg-amber-500 text-zinc-950 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -173,44 +191,35 @@ export default function GamesView({
           </button>
           <button
             onClick={() => setSubSection('history')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
               currentSubSection === 'history'
-                ? 'bg-amber-500 text-zinc-950 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
+                : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
             }`}
           >
-            <span>📜</span>
+            <History className="w-3.5 h-3.5" />
             <span>History ({gameHistory.length})</span>
           </button>
         </div>
 
         {currentSubSection === 'live' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {onOpenMessages && (
               <button
                 onClick={onOpenMessages}
                 title="Open Big Text Communicator"
-                className="text-xs bg-zinc-800 hover:bg-zinc-750 text-amber-300 border border-zinc-700 font-semibold px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
+                className="text-xs bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-700 font-medium px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
               >
-                <span>💬</span>
+                <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
                 <span className="hidden sm:inline">Big Text</span>
               </button>
             )}
             <button
-              onClick={onOpenScriptModal}
-              title="Change Script"
-              className="text-xs bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-700 font-semibold px-2 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
-            >
-              <span className="text-[10px] text-zinc-400">Script:</span>
-              <span className="text-amber-400 font-bold max-w-[90px] sm:max-w-none truncate">{scriptName}</span>
-              <span className="text-[9px]">▾</span>
-            </button>
-            <button
               onClick={() => setShowFinishModal(true)}
-              className="text-xs bg-red-950/70 hover:bg-red-900/80 text-red-200 border border-red-700/60 font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
+              className="text-xs bg-rose-950/60 hover:bg-rose-900/70 text-rose-200 border border-rose-800/60 font-medium px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
               title="Archive game to history and declare winner"
             >
-              <span>🏁</span>
+              <Flag className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Finish Game</span>
             </button>
           </div>
@@ -221,12 +230,12 @@ export default function GamesView({
       {currentSubSection === 'live' && (
         <div className="flex-1 flex flex-col">
           {/* Sub-Tabs: 1. Bag | 2. Table Circle | 3. Prompts */}
-          <div className="grid grid-cols-3 bg-zinc-900/90 border-b border-zinc-800 text-xs sm:text-sm font-semibold sticky top-[95px] md:top-[131px] z-10 backdrop-blur-sm">
+          <div className="grid grid-cols-3 bg-zinc-900/90 border-b border-zinc-800 text-xs sm:text-sm font-medium sticky top-[95px] md:top-[131px] z-10 backdrop-blur-sm">
             <button
               onClick={() => setLiveTab('bag')}
-              className={`py-2.5 border-b-2 transition-all flex items-center justify-center gap-1.5 ${
+              className={`py-2.5 border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
                 currentLiveTab === 'bag'
-                  ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
+                  ? 'border-zinc-200 text-zinc-100 bg-zinc-800/40'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -234,7 +243,7 @@ export default function GamesView({
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                   isBalanced
-                    ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/50'
+                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-600/40'
                     : 'bg-zinc-800 text-zinc-300'
                 }`}
               >
@@ -244,14 +253,14 @@ export default function GamesView({
 
             <button
               onClick={() => setLiveTab('table')}
-              className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-colors ${
                 currentLiveTab === 'table'
-                  ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
+                  ? 'border-zinc-200 text-zinc-100 bg-zinc-800/40'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
+              <CircleDot className="w-3.5 h-3.5" />
               <span>2. Table Circle</span>
-              <span>⭕</span>
               {physicalTokensInBag.length > 0 && (
                 <span className="text-[9px] px-1 rounded font-bold bg-zinc-800 text-zinc-300">
                   {usedTokens.length}/{physicalTokensInBag.length}
@@ -261,14 +270,14 @@ export default function GamesView({
 
             <button
               onClick={() => setLiveTab('night')}
-              className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2.5 border-b-2 flex items-center justify-center gap-1.5 transition-colors ${
                 currentLiveTab === 'night'
-                  ? 'border-amber-400 text-amber-400 bg-zinc-800/40'
+                  ? 'border-zinc-200 text-zinc-100 bg-zinc-800/40'
                   : 'border-transparent text-zinc-400 hover:text-zinc-200'
               }`}
             >
+              <Moon className="w-3.5 h-3.5" />
               <span>3. Prompts</span>
-              <span>🌙</span>
             </button>
           </div>
 
@@ -281,7 +290,7 @@ export default function GamesView({
                   <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
                     Number of Players:
                   </span>
-                  <span className="text-xs font-black text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">
+                  <span className="text-xs font-medium text-zinc-300 bg-zinc-800 px-2.5 py-0.5 rounded-full border border-zinc-700">
                     {playerCount} Players
                   </span>
                 </div>
@@ -291,10 +300,10 @@ export default function GamesView({
                     <button
                       key={num}
                       onClick={() => onSetPlayerCount(num)}
-                      className={`w-9 h-9 rounded-xl font-bold text-xs shrink-0 transition-all ${
+                      className={`w-9 h-9 rounded-xl text-xs shrink-0 transition-colors border ${
                         playerCount === num
-                          ? 'bg-amber-500 text-zinc-950 shadow-md scale-105'
-                          : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-750'
+                          ? 'bg-zinc-800 text-zinc-100 border-zinc-600 font-bold shadow-sm'
+                          : 'bg-zinc-900/90 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
                       }`}
                     >
                       {num}
@@ -384,20 +393,33 @@ export default function GamesView({
                 );
               })}
 
-              {/* Bridge Button: Confirm Bag & Proceed to Table */}
-              <div className="pt-2 pb-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setLiveTab('table')}
-                  className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
-                    isBalanced
-                      ? 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-emerald-950/50'
-                      : 'bg-amber-500 hover:bg-amber-400 text-zinc-950'
-                  }`}
-                >
-                  <span>Proceed to Table Circle</span>
-                  <span>⭕ ➔</span>
-                </button>
+              {/* Sticky Customer Journey Action Bar */}
+              <div className="sticky bottom-16 md:bottom-4 z-20 pt-4 pb-2">
+                {bagRoles.length === Number(playerCount) ? (
+                  <button
+                    type="button"
+                    onClick={() => setLiveTab('table')}
+                    className="w-full py-3 px-6 rounded-xl font-semibold text-sm transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-950/40 cursor-pointer"
+                  >
+                    <span>Continue to Table Circle ({bagRoles.length}/{playerCount})</span>
+                    <ArrowRight className="w-4 h-4 text-zinc-950" />
+                  </button>
+                ) : (
+                  <div className="w-full py-2.5 px-4 rounded-xl bg-zinc-900/90 border border-zinc-800 backdrop-blur text-xs flex items-center justify-between text-zinc-400 shadow-lg">
+                    <span>
+                      {bagRoles.length < Number(playerCount)
+                        ? `Select ${Number(playerCount) - bagRoles.length} more role${Number(playerCount) - bagRoles.length === 1 ? '' : 's'} to fill bag (${bagRoles.length}/${playerCount})`
+                        : `Bag has ${bagRoles.length - Number(playerCount)} too many roles (${bagRoles.length}/${playerCount})`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLiveTab('table')}
+                      className="text-xs text-zinc-400 hover:text-zinc-200 underline font-medium px-2 py-1 cursor-pointer"
+                    >
+                      Skip to Table →
+                    </button>
+                  </div>
+                )}
               </div>
             </main>
           )}
@@ -408,7 +430,7 @@ export default function GamesView({
               {/* Town Square Toolbar with Undo */}
               <div className="flex items-center justify-between gap-2 mb-3 bg-zinc-900/70 border border-zinc-800 rounded-xl px-3 py-1.5 shadow-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">⭕</span>
+                  <CircleDot className="w-4 h-4 text-zinc-400" />
                   <span className="text-xs font-bold text-zinc-200">Table Circle</span>
                   <span className="text-[10px] text-zinc-500 font-medium">({seats.length} seats)</span>
                 </div>
@@ -424,7 +446,7 @@ export default function GamesView({
                         : 'bg-zinc-950/60 text-zinc-600 border-zinc-800/60 cursor-not-allowed opacity-50'
                     }`}
                   >
-                    <span>↩</span>
+                    <RotateCcw className="w-3.5 h-3.5 text-current" />
                     <span>Undo</span>
                     {undoCount > 0 && (
                       <span className="text-[10px] bg-zinc-900 text-amber-400 font-mono px-1.5 py-0.2 rounded-full border border-amber-500/30">
@@ -440,7 +462,7 @@ export default function GamesView({
                 <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 mb-3 text-xs shadow-md">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">🎒</span>
+                      <Dices className="w-4 h-4 text-zinc-400" />
                       <span className="font-bold text-zinc-200">
                         Bag Seating: <strong className="text-amber-400">{usedTokens.length}</strong> of {physicalTokensInBag.length} seated
                       </span>
@@ -462,7 +484,7 @@ export default function GamesView({
                           className="text-[10px] font-bold bg-amber-500 hover:bg-amber-400 text-zinc-950 px-2 py-0.5 rounded-lg shadow-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
                           title="Randomly deal bag characters across empty seats"
                         >
-                          <span>🎲</span>
+                          <Dices className="w-3 h-3 text-zinc-950" />
                           <span>Deal</span>
                         </button>
                       )}
@@ -493,7 +515,7 @@ export default function GamesView({
               <div className="bg-gradient-to-r from-red-950/40 to-zinc-900 border border-red-950/80 rounded-2xl p-3 mb-3 text-xs shadow-md">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 font-bold text-red-300">
-                    <span className="text-base">🃏</span>
+                    <Sparkles className="w-4 h-4 text-rose-400" />
                     <span>Demon Bluffs (3 not-in-play Good roles):</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -501,17 +523,17 @@ export default function GamesView({
                       <button
                         type="button"
                         onClick={handleAutoPickBluffs}
-                        className="text-[10px] font-bold bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-700/60 px-2 py-0.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                        className="text-[10px] font-bold bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-700/60 px-2 py-0.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                         title="Randomly pick 3 out-of-play Good roles"
                       >
-                        <span>🎲</span>
+                        <Dices className="w-3 h-3" />
                         <span>Auto-Roll</span>
                       </button>
                     )}
                     <button
                       type="button"
                       onClick={() => setShowBluffsModal(true)}
-                      className="text-[10px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded-lg transition-colors"
+                      className="text-[10px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
                     >
                       {demonBluffs.length === 3 ? 'Edit ▾' : '+ Select 3'}
                     </button>
@@ -569,7 +591,7 @@ export default function GamesView({
                   </div>
                 ) : (
                   <p className="text-[11px] text-zinc-400 mt-1.5 pt-1.5 border-t border-zinc-800/80">
-                    No bluffs chosen yet. Tap <strong>Auto-Roll 🎲</strong> to pick 3 good characters not in play for the Demon & Spy.
+                    No bluffs chosen yet. Tap <strong>Auto-Roll</strong> to pick 3 good characters not in play for the Demon & Spy.
                   </p>
                 )}
               </div>
@@ -620,7 +642,7 @@ export default function GamesView({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base sm:text-lg font-bold text-zinc-100 flex items-center gap-2">
-                <span>🏆</span>
+                <Trophy className="w-4 h-4 text-amber-400" />
                 <span>Past Games Archive</span>
               </h2>
               <p className="text-xs text-zinc-400">
@@ -632,9 +654,9 @@ export default function GamesView({
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleExportHistory}
-                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>📥</span>
+                  <Download className="w-3.5 h-3.5" />
                   <span>Export JSON</span>
                 </button>
                 <button
@@ -643,10 +665,10 @@ export default function GamesView({
                       onClearHistory();
                     }
                   }}
-                  className="text-xs text-red-400 hover:text-red-300 p-1.5"
+                  className="text-xs text-zinc-400 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                   title="Clear history"
                 >
-                  🗑️
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -664,19 +686,19 @@ export default function GamesView({
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-zinc-100">{game.scriptName}</span>
                         <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                             game.winner === 'good'
-                              ? 'bg-blue-950/80 text-blue-300 border-blue-600/50'
+                              ? 'bg-blue-950/50 text-blue-300 border-blue-900/50'
                               : game.winner === 'evil'
-                              ? 'bg-red-950/80 text-red-300 border-red-600/50'
+                              ? 'bg-rose-950/50 text-rose-300 border-rose-900/50'
                               : 'bg-zinc-800 text-zinc-300 border-zinc-700'
                           }`}
                         >
                           {game.winner === 'good'
-                            ? 'Good Wins 😇'
+                            ? 'Good Wins'
                             : game.winner === 'evil'
-                            ? 'Evil Wins 😈'
-                            : 'Draw / Abandoned 🏳️'}
+                            ? 'Evil Wins'
+                            : 'Draw / Abandoned'}
                         </span>
                       </div>
                       <p className="text-xs text-zinc-400 mt-0.5">
@@ -688,10 +710,10 @@ export default function GamesView({
 
                     <button
                       onClick={() => onDeleteHistoryItem(game.id)}
-                      className="text-zinc-500 hover:text-red-400 text-xs p-1"
+                      className="text-zinc-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
                       title="Delete entry"
                     >
-                      ✕
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
@@ -708,9 +730,9 @@ export default function GamesView({
                     </span>
                     <button
                       onClick={() => setViewingSnapshot(game)}
-                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-amber-300 border border-zinc-700 rounded-xl font-semibold flex items-center gap-1 transition-colors"
+                      className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-zinc-100 border border-zinc-700 rounded-xl font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <span>👁️</span>
+                      <Eye className="w-3.5 h-3.5 text-zinc-400" />
                       <span>View Final Table</span>
                     </button>
                   </div>
@@ -719,16 +741,17 @@ export default function GamesView({
             </div>
           ) : (
             <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-8 text-center space-y-3">
-              <div className="text-3xl">📜</div>
+              <ScrollText className="w-8 h-8 text-zinc-600 mx-auto" />
               <p className="text-sm font-semibold text-zinc-300">No finished games yet</p>
               <p className="text-xs text-zinc-500 max-w-sm mx-auto">
                 When you finish a game in the Live Grimoire, tap "Finish Game" to log the winning team, final table layout, and notes here.
               </p>
               <button
                 onClick={() => setSubSection('live')}
-                className="px-4 py-2 bg-amber-500 text-zinc-950 font-bold rounded-xl text-xs"
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl text-xs transition-all shadow-md active:scale-95 inline-flex items-center gap-1.5 cursor-pointer"
               >
-                Go to Live Grimoire ➔
+                <span>Go to Live Grimoire</span>
+                <ArrowRight className="w-3.5 h-3.5 text-zinc-950" />
               </button>
             </div>
           )}
@@ -741,14 +764,14 @@ export default function GamesView({
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-scaleUp">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-                <span>🏁</span>
+                <Flag className="w-4 h-4 text-rose-400" />
                 <span>Finish & Archive Game</span>
               </h3>
               <button
                 onClick={() => setShowFinishModal(false)}
-                className="text-zinc-400 hover:text-zinc-200 text-sm"
+                className="text-zinc-400 hover:text-zinc-200 p-1 cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -763,35 +786,35 @@ export default function GamesView({
                 <button
                   type="button"
                   onClick={() => setFinishWinner('good')}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                  className={`py-2 px-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                     finishWinner === 'good'
                       ? 'bg-blue-600 text-white border-blue-400 shadow-md'
                       : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-750'
                   }`}
                 >
-                  Good Wins 😇
+                  Good Wins
                 </button>
                 <button
                   type="button"
                   onClick={() => setFinishWinner('evil')}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                  className={`py-2 px-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                     finishWinner === 'evil'
-                      ? 'bg-red-600 text-white border-red-400 shadow-md'
+                      ? 'bg-rose-600 text-white border-rose-400 shadow-md'
                       : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-750'
                   }`}
                 >
-                  Evil Wins 😈
+                  Evil Wins
                 </button>
                 <button
                   type="button"
                   onClick={() => setFinishWinner('draw')}
-                  className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${
+                  className={`py-2 px-1 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                     finishWinner === 'draw'
-                      ? 'bg-zinc-600 text-white border-zinc-400 shadow-md'
+                      ? 'bg-zinc-700 text-white border-zinc-500 shadow-md'
                       : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-750'
                   }`}
                 >
-                  Draw / Other 🏳️
+                  Draw / Other
                 </button>
               </div>
             </div>
@@ -847,9 +870,9 @@ export default function GamesView({
               </div>
               <button
                 onClick={() => setViewingSnapshot(null)}
-                className="text-zinc-400 hover:text-zinc-200 text-base"
+                className="text-zinc-400 hover:text-zinc-200 p-1 cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -880,7 +903,7 @@ export default function GamesView({
                         <div className="font-semibold flex items-center gap-1.5">
                           <span>{s.name || `Player ${s.seat}`}</span>
                           {s.isDead && (
-                            <span className="text-[10px] text-zinc-500 font-bold">💀 DEAD</span>
+                            <span className="text-[10px] text-zinc-500 font-bold">DEAD</span>
                           )}
                         </div>
                         {roleInfo && (
@@ -909,7 +932,7 @@ export default function GamesView({
             <div className="pt-2 border-t border-zinc-800 flex justify-end">
               <button
                 onClick={() => setViewingSnapshot(null)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-bold rounded-xl text-xs"
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-bold rounded-xl text-xs cursor-pointer"
               >
                 Close Snapshot
               </button>
@@ -930,7 +953,7 @@ export default function GamesView({
           >
             <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/70">
               <div className="flex items-center gap-2">
-                <span className="text-xl">🃏</span>
+                <Sparkles className="w-5 h-5 text-rose-400" />
                 <div>
                   <h3 className="font-bold text-zinc-100 text-sm">Select 3 Demon Bluffs</h3>
                   <p className="text-[11px] text-zinc-400">
@@ -941,10 +964,10 @@ export default function GamesView({
               <button
                 type="button"
                 onClick={() => setShowBluffsModal(false)}
-                className="text-zinc-400 hover:text-zinc-100 text-lg p-1"
+                className="text-zinc-400 hover:text-zinc-100 p-1 cursor-pointer"
                 aria-label="Close modal"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -974,9 +997,9 @@ export default function GamesView({
                             }
                           }
                         }}
-                        className={`text-left p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all active:scale-95 ${
+                        className={`text-left p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all active:scale-95 cursor-pointer ${
                           isSelected
-                            ? 'bg-red-950/80 border-red-500 text-red-100 shadow-sm'
+                            ? 'bg-rose-950/80 border-rose-500 text-rose-100 shadow-sm'
                             : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                         }`}
                       >
@@ -985,8 +1008,8 @@ export default function GamesView({
                           <span className="truncate">{r.name}</span>
                         </div>
                         {isSelected ? (
-                          <span className="text-[10px] bg-red-500 text-zinc-950 font-black px-1.5 py-0.5 rounded-full shrink-0">
-                            ✓
+                          <span className="w-4 h-4 rounded-full bg-rose-500 text-zinc-950 flex items-center justify-center shrink-0">
+                            <Check className="w-3 h-3 text-zinc-950 stroke-[3]" />
                           </span>
                         ) : (
                           <span className="text-[9px] text-zinc-500 capitalize shrink-0">{r.team}</span>
@@ -1003,16 +1026,16 @@ export default function GamesView({
                 <button
                   type="button"
                   onClick={handleAutoPickBluffs}
-                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-amber-300 font-bold text-xs flex items-center gap-1 border border-zinc-700"
+                  className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-zinc-100 font-medium text-xs flex items-center gap-1.5 border border-zinc-700 cursor-pointer"
                 >
-                  <span>🎲</span>
+                  <Dices className="w-3.5 h-3.5 text-zinc-400" />
                   <span>Auto-Roll 3</span>
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setShowBluffsModal(false)}
-                className="ml-auto px-5 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
+                className="ml-auto px-5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm cursor-pointer"
               >
                 Done
               </button>

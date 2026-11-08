@@ -179,20 +179,20 @@ export default function RoleBalanceTracker({
         {/* Status Badge */}
         <div className="flex items-center gap-1.5 self-start sm:self-auto">
           {isBalanced ? (
-            <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 shadow-md shadow-emerald-950/60 flex items-center gap-1 animate-pulse">
-              <span>✨</span>
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-md flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>BALANCED ({numericCount}p)</span>
             </span>
           ) : totalSelected === numericCount ? (
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/60 text-amber-300">
-              ⚡ {totalSelected}/{numericCount} in bag (Custom Setup)
+            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200">
+              {totalSelected}/{numericCount} in bag (Custom)
             </span>
           ) : totalSelected > numericCount ? (
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-950/80 border border-rose-500/60 text-rose-300">
-              ⚠️ {totalSelected}/{numericCount} (+{totalSelected - numericCount} over)
+            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-800/60 text-rose-300">
+              {totalSelected}/{numericCount} (+{totalSelected - numericCount} over)
             </span>
           ) : (
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
               {totalSelected}/{numericCount} in bag
             </span>
           )}
@@ -204,16 +204,16 @@ export default function RoleBalanceTracker({
         <div className="bg-zinc-950/70 border border-zinc-800 rounded-xl p-2.5 space-y-1.5 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-              {totalSelected === 0 ? 'How to balance bag:' : 'Adjust bag to reach ✨ Balanced:'}
+              {totalSelected === 0 ? 'How to balance bag:' : 'Adjust bag to balance:'}
             </span>
             {scriptRoles?.length > 0 && onSetBagRoles && (
               <button
                 type="button"
                 onClick={handleAutoFillBag}
-                className="text-[11px] font-bold text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1"
+                className="text-[11px] font-medium text-zinc-400 hover:text-zinc-200 hover:underline flex items-center gap-1"
                 title="Automatically select recommended roles for this player count"
               >
-                <span>⚡ Auto-fill bag</span>
+                <span>Auto-fill bag</span>
               </button>
             )}
           </div>
@@ -239,25 +239,24 @@ export default function RoleBalanceTracker({
 
       {/* Quick Action Bar (Auto-fill / Clear) */}
       <div className="flex items-center justify-between text-xs pt-0.5">
-        <span className="text-zinc-400 text-[11px]">
-          Click roles below to add or remove from bag.
+        <span className="text-zinc-500 text-[11px]">
+          Tap roles below to add or remove from bag.
         </span>
         <div className="flex items-center gap-2">
           {scriptRoles?.length > 0 && onSetBagRoles && (
             <button
               type="button"
               onClick={handleAutoFillBag}
-              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-amber-300 font-semibold border border-zinc-700 text-[11px] transition-colors flex items-center gap-1 shadow-sm"
+              className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-zinc-200 font-medium border border-zinc-700 text-[11px] transition-colors flex items-center gap-1 shadow-sm"
             >
-              <span>⚡</span>
-              <span>Auto-Fill Balanced Bag</span>
+              <span>Auto-Fill Bag</span>
             </button>
           )}
           {bagRoles.length > 0 && onSetBagRoles && (
             <button
               type="button"
               onClick={handleClearBag}
-              className="text-[11px] text-zinc-500 hover:text-rose-400 px-1.5 py-1"
+              className="text-[11px] text-zinc-500 hover:text-rose-400 px-1.5 py-1 transition-colors"
               title="Clear all roles from bag"
             >
               Clear
@@ -285,25 +284,25 @@ export default function RoleBalanceTracker({
       {/* Drunk Disguise Banner */}
       {bagRoles.includes('drunk') && (
         <div
-          className={`rounded-xl p-3 border transition-all ${
+          className={`rounded-xl p-3 border transition-colors ${
             drunkDisguise
-              ? 'bg-amber-950/40 border-amber-500/50'
-              : 'bg-amber-950/80 border-amber-400 shadow-md animate-pulse'
+              ? 'bg-zinc-950/80 border-zinc-800'
+              : 'bg-rose-950/20 border-rose-800/60'
           }`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5">
-              <span className="text-xl">🍺</span>
+              <span className="text-lg w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">🍺</span>
               <div>
-                <div className="font-bold text-amber-300 text-xs flex items-center gap-1.5 flex-wrap">
+                <div className="font-bold text-zinc-200 text-xs flex items-center gap-1.5 flex-wrap">
                   <span>Drunk Townsfolk Disguise:</span>
                   {drunkDisguise ? (
-                    <span className="text-white font-mono bg-amber-900/80 px-2 py-0.5 rounded-lg border border-amber-500 font-bold">
+                    <span className="text-zinc-100 bg-zinc-800 px-2 py-0.5 rounded-lg border border-zinc-700 font-medium">
                       {getRoleInfo(drunkDisguise)?.name || drunkDisguise}
                     </span>
                   ) : (
-                    <span className="text-red-300 font-bold bg-red-950/90 px-2 py-0.5 rounded-lg border border-red-500">
-                      ⚠️ Disguise needed for bag!
+                    <span className="text-rose-300 font-medium bg-rose-950/60 px-2 py-0.5 rounded-lg border border-rose-800/60">
+                      Disguise needed for bag
                     </span>
                   )}
                 </div>
@@ -316,7 +315,7 @@ export default function RoleBalanceTracker({
               <select
                 value={drunkDisguise}
                 onChange={(e) => onSetDrunkDisguise(e.target.value)}
-                className="bg-zinc-900 border border-amber-500/60 rounded-xl px-3 py-1.5 text-xs text-zinc-100 font-semibold focus:outline-none focus:border-amber-400 shrink-0"
+                className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-zinc-100 font-medium focus:outline-none focus:border-zinc-500 shrink-0"
               >
                 <option value="">-- Select Townsfolk --</option>
                 {availableTownsfolkForDrunk.map((tf) => (
@@ -333,16 +332,15 @@ export default function RoleBalanceTracker({
       {/* Two Team Cards: Good vs Evil */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {/* GOOD TEAM CARD */}
-        <div className="bg-gradient-to-b from-blue-950/30 to-zinc-950 border border-blue-900/40 rounded-xl p-3 space-y-2.5">
+        <div className="bg-blue-950/10 border border-blue-900/30 rounded-xl p-3 space-y-2.5">
           <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 font-bold text-blue-300">
-              <span>😇</span>
-              <span>GOOD TEAM</span>
-            </div>
+            <span className="font-bold text-blue-300 uppercase tracking-wider text-[11px]">
+              GOOD TEAM
+            </span>
             <span
               className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
                 currentGood === targetGood
-                  ? 'bg-blue-900/60 text-blue-200 border border-blue-600/40'
+                  ? 'bg-blue-900/40 text-blue-200 border border-blue-800/40'
                   : 'bg-zinc-800/80 text-zinc-400'
               }`}
             >
@@ -402,16 +400,15 @@ export default function RoleBalanceTracker({
         </div>
 
         {/* EVIL TEAM CARD */}
-        <div className="bg-gradient-to-b from-red-950/30 to-zinc-950 border border-red-900/40 rounded-xl p-3 space-y-2.5">
+        <div className="bg-rose-950/10 border border-rose-900/30 rounded-xl p-3 space-y-2.5">
           <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 font-bold text-red-300">
-              <span>😈</span>
-              <span>EVIL TEAM</span>
-            </div>
+            <span className="font-bold text-rose-300 uppercase tracking-wider text-[11px]">
+              EVIL TEAM
+            </span>
             <span
               className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
                 currentEvil === targetEvil
-                  ? 'bg-red-900/60 text-red-200 border border-red-600/40'
+                  ? 'bg-rose-900/40 text-rose-200 border border-rose-800/40'
                   : 'bg-zinc-800/80 text-zinc-400'
               }`}
             >

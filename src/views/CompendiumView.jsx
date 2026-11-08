@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
+import { BookOpen, FileText, Search, X, Eye } from 'lucide-react';
 import { getAllRoles, EDITIONS } from '../data/roles';
 
 const TEAM_LABELS = {
-  all: { label: 'All Teams', icon: '✦', badge: 'bg-zinc-800 text-zinc-300' },
-  townsfolk: { label: 'Townsfolk', icon: '🧺', badge: 'bg-blue-950/80 text-blue-300 border-blue-600/40' },
-  outsider: { label: 'Outsiders', icon: '🍺', badge: 'bg-cyan-950/80 text-cyan-300 border-cyan-600/40' },
-  minion: { label: 'Minions', icon: '🧪', badge: 'bg-orange-950/80 text-orange-300 border-orange-600/40' },
-  demon: { label: 'Demons', icon: '😈', badge: 'bg-red-950/80 text-red-300 border-red-600/40' },
-  traveller: { label: 'Travellers', icon: '🧳', badge: 'bg-purple-950/80 text-purple-300 border-purple-600/40' },
+  all: { label: 'All Teams', badge: 'bg-zinc-800/80 text-zinc-300 border-zinc-700/60' },
+  townsfolk: { label: 'Townsfolk', badge: 'bg-blue-950/50 text-blue-300 border-blue-900/50' },
+  outsider: { label: 'Outsiders', badge: 'bg-cyan-950/50 text-cyan-300 border-cyan-900/50' },
+  minion: { label: 'Minions', badge: 'bg-orange-950/50 text-orange-300 border-orange-900/50' },
+  demon: { label: 'Demons', badge: 'bg-rose-950/50 text-rose-300 border-rose-900/50' },
+  traveller: { label: 'Travellers', badge: 'bg-purple-950/50 text-purple-300 border-purple-900/50' },
 };
 
 const GLOSSARY_RULES = [
@@ -27,7 +28,7 @@ const GLOSSARY_RULES = [
     desc: 'Dead players may still participate in discussions freely. Each dead player has exactly ONE ghost vote token for the remainder of the game. Once spent, they cannot vote again.',
   },
   {
-    term: 'Travellers (Путники)',
+    term: 'Travellers',
     icon: '🧳',
     desc: 'Travellers arrive late or leave early. They do not count toward player count for Evil/Good ratio or majority execution math. They can be exiled by a simple majority vote without ending the day.',
   },
@@ -80,12 +81,12 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
       <div className="space-y-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📖</span>
+            <BookOpen className="w-5 h-5 text-zinc-300" />
             <h1 className="text-lg sm:text-xl font-black text-zinc-100 tracking-tight">
               Compendium Reference
             </h1>
           </div>
-          <span className="text-xs font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-500/30">
+          <span className="text-xs font-medium text-zinc-300 bg-zinc-800 px-2.5 py-0.5 rounded-full border border-zinc-700">
             {allRoles.length} Characters
           </span>
         </div>
@@ -95,27 +96,27 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
       </div>
 
       {/* Sub-sections tabs */}
-      <div className="grid grid-cols-2 gap-1 bg-zinc-900 p-1 rounded-2xl border border-zinc-800 text-xs font-semibold max-w-sm">
+      <div className="grid grid-cols-2 gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs font-medium max-w-xs">
         <button
           onClick={() => setActiveSubTab('characters')}
-          className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+          className={`py-1.5 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
             activeSubTab === 'characters'
-              ? 'bg-amber-500 text-zinc-950 font-bold shadow-md'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
           }`}
         >
-          <span>🃏</span>
+          <BookOpen className="w-3.5 h-3.5" />
           <span>Characters</span>
         </button>
         <button
           onClick={() => setActiveSubTab('rules')}
-          className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+          className={`py-1.5 px-3 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
             activeSubTab === 'rules'
-              ? 'bg-amber-500 text-zinc-950 font-bold shadow-md'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 border border-transparent'
           }`}
         >
-          <span>📜</span>
+          <FileText className="w-3.5 h-3.5" />
           <span>Rules & Glossary</span>
         </button>
       </div>
@@ -125,25 +126,25 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
         <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">🔍</span>
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by character or ability (e.g. poison, executed, neighbor)..."
-              className="w-full bg-zinc-900 border border-zinc-700/80 rounded-2xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-400 transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 text-sm w-5 h-5 flex items-center justify-center rounded-full bg-zinc-800"
               >
-                ✕
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          {/* Team Filter Pills */}
+          {/* Team Filter Pills (No emojis) */}
           <div className="space-y-1.5">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
               Filter by Team
@@ -155,13 +156,12 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                   <button
                     key={k}
                     onClick={() => setSelectedTeam(k)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 border ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors border ${
                       isSel
-                        ? 'bg-amber-500 text-zinc-950 font-bold border-amber-400 shadow-md'
-                        : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+                        ? 'bg-zinc-800 text-zinc-100 border-zinc-600 shadow-sm'
+                        : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
                     }`}
                   >
-                    <span>{v.icon}</span>
                     <span>{v.label}</span>
                   </button>
                 );
@@ -181,10 +181,10 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                   <button
                     key={k}
                     onClick={() => setSelectedEdition(k)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium shrink-0 transition-all border ${
+                    className={`px-3 py-1 rounded-lg text-xs font-medium shrink-0 transition-colors border ${
                       isSel
-                        ? 'bg-zinc-100 text-zinc-950 font-bold border-zinc-200 shadow-sm'
-                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                        ? 'bg-zinc-800 text-zinc-100 border-zinc-600 shadow-sm'
+                        : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
                     }`}
                   >
                     <span>{v.label}</span>
@@ -206,7 +206,7 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                   setSelectedTeam('all');
                   setSelectedEdition('all');
                 }}
-                className="text-amber-400 hover:underline text-[11px] font-semibold"
+                className="text-zinc-400 hover:text-zinc-200 hover:underline text-[11px] font-medium"
               >
                 Reset all filters
               </button>
@@ -223,13 +223,13 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                 return (
                   <div
                     key={role.id}
-                    className="bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-4 transition-all flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md"
+                    className="bg-zinc-900/90 border border-zinc-800 hover:border-zinc-750 rounded-2xl p-4 transition-all flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md"
                   >
                     <div className="space-y-2">
                       {/* Card Header: Icon, Name, Badges */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2.5">
-                          <span className="text-2xl w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center shrink-0">
+                          <span className="text-2xl w-10 h-10 rounded-xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden">
                             {role.icon}
                           </span>
                           <div>
@@ -242,7 +242,7 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                               >
                                 {teamStyle.label}
                               </span>
-                              <span className="text-[9px] text-zinc-400 bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700">
+                              <span className="text-[9px] text-zinc-400 bg-zinc-800/80 px-1.5 py-0.2 rounded border border-zinc-700/60">
                                 {editionInfo.label}
                               </span>
                             </div>
@@ -251,12 +251,12 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                       </div>
 
                       {/* Ability text */}
-                      <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-800/60">
+                      <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/60">
                         {role.ability || 'No official description provided.'}
                       </p>
                     </div>
 
-                    {/* Show to player CTA */}
+                    {/* Show to player CTA (Neutral styling) */}
                     <div className="pt-1 flex items-center justify-end">
                       <button
                         onClick={() =>
@@ -267,10 +267,10 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
                             body: role.ability,
                           })
                         }
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-750 text-amber-300 hover:text-amber-200 border border-zinc-700 hover:border-amber-500/40 rounded-xl text-xs font-semibold transition-all active:scale-95"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 hover:border-zinc-700 rounded-lg text-xs font-medium transition-colors shadow-sm active:scale-95"
                         title="Display card in fullscreen mode to show a player silently"
                       >
-                        <span>👁️</span>
+                        <Eye className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Show to Player</span>
                       </button>
                     </div>
@@ -280,7 +280,7 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
             </div>
           ) : (
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 text-center space-y-3">
-              <div className="text-3xl">🔍</div>
+              <Search className="w-8 h-8 text-zinc-600 mx-auto" />
               <p className="text-sm text-zinc-300 font-semibold">No characters found</p>
               <p className="text-xs text-zinc-500">
                 No roles matched your search criteria "{searchQuery}". Try a different keyword or reset filters.
@@ -303,25 +303,22 @@ export default function CompendiumView({ onShowRoleFullscreen }) {
       {/* SUB-SECTION 2: RULES & GLOSSARY */}
       {activeSubTab === 'rules' && (
         <div className="space-y-3">
-          <p className="text-xs text-zinc-400">
-            Essential mechanical definitions and rulings for Storytellers.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {GLOSSARY_RULES.map((rule) => (
-              <div
-                key={rule.term}
-                className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-2"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{rule.icon}</span>
-                  <h3 className="text-sm font-bold text-zinc-100">{rule.term}</h3>
-                </div>
-                <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/80">
-                  {rule.desc}
-                </p>
+          {GLOSSARY_RULES.map((rule) => (
+            <div
+              key={rule.term}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-1.5 shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0 overflow-hidden">
+                  {rule.icon}
+                </span>
+                <h2 className="text-sm font-bold text-zinc-100">{rule.term}</h2>
               </div>
-            ))}
-          </div>
+              <p className="text-xs text-zinc-300 leading-relaxed pl-10">
+                {rule.desc}
+              </p>
+            </div>
+          ))}
         </div>
       )}
     </div>

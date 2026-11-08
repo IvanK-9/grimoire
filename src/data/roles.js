@@ -15,7 +15,7 @@ export const ALL_ROLES_DB = {
   washerwoman: ['Washerwoman', 'townsfolk', '🧺', 'You start knowing that 1 of 2 players is a specific Townsfolk.', 'tb'],
   librarian: ['Librarian', 'townsfolk', '📚', 'You start knowing that 1 of 2 players is a specific Outsider, or that zero are in play.', 'tb'],
   investigator: ['Investigator', 'townsfolk', '🔍', 'You start knowing that 1 of 2 players is a specific Minion.', 'tb'],
-  chef: ['Chef', 'townsfolk', '🧑‍🍳', 'You start knowing how many pairs of evil players are sitting next to each other.', 'tb'],
+  chef: ['Chef', 'townsfolk', '🍳', 'You start knowing how many pairs of evil players are sitting next to each other.', 'tb'],
   empath: ['Empath', 'townsfolk', '👁️', 'Each night, you learn how many of your 2 alive neighbours are evil.', 'tb'],
   fortuneteller: ['Fortune Teller', 'townsfolk', '🔮', 'Each night, choose 2 players: you learn if either is a Demon. 1 good player registers as a Demon.', 'tb'],
   undertaker: ['Undertaker', 'townsfolk', '⚰️', 'Each night*, you learn which character died by execution today.', 'tb'],

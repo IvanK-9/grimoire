@@ -527,7 +527,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans select-none flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans select-none flex flex-col pb-20 md:pb-0">
       {/* Fullscreen Flashcard Modal for player presentation */}
       <FullscreenFlashcard card={fullscreenCard} onClose={() => setFullscreenCard(null)} />
 
