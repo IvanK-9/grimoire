@@ -17,7 +17,7 @@ try {
 const buildTime = new Date().toISOString();
 
 export default defineConfig({
-  base: '/grimoire/',
+  base: process.env.VITE_BASE || '/grimoire/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __GIT_HASH__: JSON.stringify(gitHash),
@@ -53,6 +53,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        navigateFallbackDenylist: [/^\/grimoire\/dev/],
       },
     }),
   ],
