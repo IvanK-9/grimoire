@@ -164,7 +164,7 @@ export default function RoleBalanceTracker({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-zinc-800/80">
         <div>
           <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-            <span>Official Balance Breakdown ({numericCount}p):</span>
+            <span>Official Balance Breakdown:</span>
           </div>
           <div className="text-xs font-semibold text-zinc-200 mt-0.5">
             <span className="text-blue-400 font-bold">{targetGood} Good</span>
@@ -181,11 +181,11 @@ export default function RoleBalanceTracker({
           {isBalanced ? (
             <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 shadow-md flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>BALANCED ({numericCount}p)</span>
+              <span>BALANCED</span>
             </span>
           ) : totalSelected === numericCount ? (
             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200">
-              {totalSelected}/{numericCount} in bag (Custom)
+              {totalSelected}/{numericCount} (Custom)
             </span>
           ) : totalSelected > numericCount ? (
             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-rose-950/60 border border-rose-800/60 text-rose-300">
@@ -193,7 +193,7 @@ export default function RoleBalanceTracker({
             </span>
           ) : (
             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
-              {totalSelected}/{numericCount} in bag
+              {totalSelected}/{numericCount}
             </span>
           )}
         </div>

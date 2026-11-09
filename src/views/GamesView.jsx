@@ -285,24 +285,25 @@ export default function GamesView({
           {currentLiveTab === 'bag' && (
             <main className="p-4 space-y-5 max-w-lg mx-auto w-full flex-1">
               {/* Player Count */}
-              <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                    Number of Players:
+              <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 shadow-md space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                    Player Count:
                   </span>
-                  <span className="text-xs font-medium text-zinc-300 bg-zinc-800 px-2.5 py-0.5 rounded-full border border-zinc-700">
-                    {playerCount} Players
+                  <span className="text-[11px] text-zinc-500">
+                    5 to 15 players
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
                   {[5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((num) => (
                     <button
                       key={num}
+                      type="button"
                       onClick={() => onSetPlayerCount(num)}
-                      className={`w-9 h-9 rounded-xl text-xs shrink-0 transition-colors border ${
+                      className={`w-9 h-9 rounded-xl text-xs shrink-0 transition-colors border cursor-pointer ${
                         playerCount === num
-                          ? 'bg-zinc-800 text-zinc-100 border-zinc-600 font-bold shadow-sm'
+                          ? 'bg-zinc-800 text-zinc-100 border-zinc-500 font-bold shadow-sm'
                           : 'bg-zinc-900/90 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
                       }`}
                     >
@@ -401,7 +402,7 @@ export default function GamesView({
                     onClick={() => setLiveTab('table')}
                     className="w-full py-3 px-6 rounded-xl font-semibold text-sm transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95 bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-950/40 cursor-pointer"
                   >
-                    <span>Continue to Table Circle ({bagRoles.length}/{playerCount})</span>
+                    <span>Continue to Table Circle</span>
                     <ArrowRight className="w-4 h-4 text-zinc-950" />
                   </button>
                 ) : (
@@ -432,7 +433,6 @@ export default function GamesView({
                 <div className="flex items-center gap-2">
                   <CircleDot className="w-4 h-4 text-zinc-400" />
                   <span className="text-xs font-bold text-zinc-200">Table Circle</span>
-                  <span className="text-[10px] text-zinc-500 font-medium">({seats.length} seats)</span>
                 </div>
                 {onUndo && (
                   <button
@@ -457,8 +457,8 @@ export default function GamesView({
                 )}
               </div>
 
-              {/* Unassigned Tokens in Bag Helper Banner */}
-              {physicalTokensInBag.length > 0 && (
+              {/* Unassigned Tokens in Bag Helper Banner (Only visible while seats need assignment) */}
+              {unassignedTokens.length > 0 && (
                 <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 mb-3 text-xs shadow-md">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -468,15 +468,9 @@ export default function GamesView({
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      {unassignedTokens.length === 0 ? (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/40">
-                          ✓ All seated
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
-                          {unassignedTokens.length} unassigned
-                        </span>
-                      )}
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                        {unassignedTokens.length} unassigned
+                      </span>
                       {unassignedTokens.length > 0 && onDigitalDeal && (
                         <button
                           type="button"
